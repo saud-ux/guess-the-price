@@ -84,11 +84,29 @@ function playResult(isWin) {
   } catch(e) {}
 }
 
-// Auto-fill room code from URL
+// ─── Remembered identity (for quick re-join) ───
+const SAVE_KEY = 'gtp_player_v1';
+function loadSaved() {
+  try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; }
+  catch (e) { return {}; }
+}
+function saveIdentity(name, code) {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ name, code })); }
+  catch (e) {}
+}
+
+// Pre-fill room code (URL wins) and the last-used name.
 const urlParams = new URLSearchParams(window.location.search);
 const roomFromUrl = urlParams.get('room');
-if (roomFromUrl) {
-  document.getElementById('room-code-input').value = roomFromUrl;
+const saved = loadSaved();
+const roomInput = document.getElementById('room-code-input');
+const nameInput = document.getElementById('player-name-input');
+if (roomFromUrl) roomInput.value = roomFromUrl;
+else if (saved.code) roomInput.value = saved.code;
+if (saved.name) nameInput.value = saved.name;
+// If both are already known, focus the join button for a one-tap re-join.
+if (roomInput.value.trim().length === 4 && nameInput.value.trim()) {
+  setTimeout(() => document.getElementById('btn-join').focus(), 150);
 }
 
 // ─── Join ───
@@ -133,6 +151,7 @@ socket.on('join-error', ({ message }) => {
 });
 
 socket.on('join-success', ({ state, currentRound, alreadyGuessed }) => {
+  saveIdentity(playerName, roomCode);
   if (state === 'active' && currentRound && !alreadyGuessed) {
     document.getElementById('p-round-num').textContent = currentRound.number;
     document.getElementById('p-total-rounds').textContent = currentRound.totalRounds;
