@@ -132,14 +132,19 @@ socket.on('join-error', ({ message }) => {
   btn.textContent = 'انضم للعبة';
 });
 
-socket.on('join-success', ({ state, currentRound }) => {
-  if (state === 'active' && currentRound) {
+socket.on('join-success', ({ state, currentRound, alreadyGuessed }) => {
+  if (state === 'active' && currentRound && !alreadyGuessed) {
     document.getElementById('p-round-num').textContent = currentRound.number;
     document.getElementById('p-total-rounds').textContent = currentRound.totalRounds;
     document.getElementById('p-product-name').textContent = currentRound.productName;
     document.getElementById('p-currency').textContent = currentRound.currency;
+    document.getElementById('guess-input').value = '';
+    document.getElementById('btn-submit-guess').disabled = false;
     showScreen('guess');
     setTimeout(() => document.getElementById('guess-input').focus(), 100);
+  } else if (state === 'active' && alreadyGuessed) {
+    // Reconnected after already submitting this round.
+    showScreen('guessed');
   } else {
     showScreen('waiting');
   }
@@ -214,10 +219,34 @@ socket.on('guess-error', ({ message }) => {
 });
 
 // ─── Result ───
-socket.on('your-result', ({ yourGuess, rank, difference, isOver, points, totalScore, didGuess }) => {
+socket.on('your-result', ({ yourGuess, rank, difference, isOver, perfect, points, totalScore, didGuess }) => {
   const content = document.getElementById('p-result-content');
   const medals = ['🥇', '🥈', '🥉'];
   const rankLabels = ['الأقرب!', 'المركز الثاني!', 'المركز الثالث!'];
+
+  if (perfect && didGuess) {
+    content.innerHTML = `
+      <div class="p-result-medal">🎯</div>
+      <div class="p-result-title win">مثالي! السعر بالضبط</div>
+      <div class="p-result-stats">
+        <div class="p-result-stat">
+          <div class="p-result-stat-label">تخمينك</div>
+          <div class="p-result-stat-value">${formatNumber(yourGuess)}</div>
+        </div>
+        <div class="p-result-stat">
+          <div class="p-result-stat-label">الفرق</div>
+          <div class="p-result-stat-value under">0</div>
+        </div>
+      </div>
+      <div class="p-result-points">+${points} نقاط 🎯</div>
+      <div class="p-result-total">مجموع نقاطك</div>
+      <div class="p-result-total-score">${totalScore} نقاط</div>
+      <div class="p-result-footer"><div class="mini-spinner"></div> بانتظار الجولة التالية...</div>
+    `;
+    playResult(true);
+    showScreen('playerResult');
+    return;
+  }
 
   if (!didGuess) {
     content.innerHTML = `

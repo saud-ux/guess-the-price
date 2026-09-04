@@ -487,6 +487,18 @@
 
     .rank-item.over-price { opacity: 0.55; }
 
+    .rank-item.perfect {
+      background: linear-gradient(135deg, rgba(251,191,36,0.18), rgba(251,191,36,0.06));
+      border-color: rgba(251,191,36,0.55);
+      box-shadow: 0 0 26px rgba(251,191,36,0.22);
+    }
+
+    .rank-diff.perfect-tag {
+      color: #0a0a1a;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      font-weight: 800;
+    }
+
     .rank-medal { font-size: 1.4rem; width: 32px; text-align: center; }
     .rank-name { flex: 1; font-weight: 700; font-size: 0.95rem; }
 
@@ -697,6 +709,30 @@
       100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
     }
 
+    /* ─── Mute button ─── */
+    .mute-btn {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      z-index: 200;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 1px solid var(--glass-border);
+      background: var(--glass);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      color: var(--text);
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 0.2s;
+    }
+    .mute-btn:active { transform: scale(0.9); }
+
     @media (max-width: 380px) {
       .pr-digit { width: 40px; height: 54px; font-size: 2rem; }
       .podium-block { min-width: 80px; padding: 12px 8px; }
@@ -871,6 +907,7 @@
 
   </div>
 
+  <button class="mute-btn" id="mute-btn" title="كتم الصوت" aria-label="كتم الصوت">🔊</button>
   <div class="toast" id="toast"></div>
   <div class="particles" id="particles"></div>
 
@@ -906,12 +943,32 @@
 
     function fmt(n) { return Number(n).toLocaleString('en-US'); }
 
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    // ─── Persistence ───
+    const STORE_KEY = 'gtp_offline_v1';
+    function loadStore() {
+      try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }
+      catch (e) { return {}; }
+    }
+    function saveStore(patch) {
+      try {
+        const cur = loadStore();
+        localStorage.setItem(STORE_KEY, JSON.stringify(Object.assign(cur, patch)));
+      } catch (e) {}
+    }
+
     // ─── Audio ───
+    let muted = loadStore().muted === true;
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     let audioCtx;
     function ac() { if (!audioCtx) audioCtx = new AudioCtx(); return audioCtx; }
 
     function snd(freq, dur, vol) {
+      if (muted) return;
       try {
         const c = ac(), o = c.createOscillator(), g = c.createGain();
         o.connect(g); g.connect(c.destination);
@@ -932,8 +989,26 @@
       snd(350 + (i / Math.max(total, 1)) * 800, 0.15, 0.06);
     }
 
+    function sndPerfect() {
+      [784, 988, 1319, 1568].forEach((f, i) => {
+        setTimeout(() => snd(f, 0.3, 0.06), i * 110);
+      });
+    }
+
+    // ─── Mute ───
+    const muteBtn = document.getElementById('mute-btn');
+    function renderMute() { muteBtn.textContent = muted ? '🔇' : '🔊'; }
+    renderMute();
+    muteBtn.onclick = () => {
+      muted = !muted;
+      saveStore({ muted });
+      renderMute();
+      if (!muted) snd(660, 0.1, 0.05);
+    };
+
     // ─── Confetti ───
     function confetti(count) {
+      if (muted) return;
       const c = document.getElementById('particles');
       const cols = ['#fbbf24','#34d399','#f87171','#60a5fa','#a78bfa','#f472b6','#fde68a'];
       for (let i = 0; i < count; i++) {
@@ -967,27 +1042,46 @@
       renderTags();
     }
 
-    function removePlayer(name) {
-      players = players.filter(p => p !== name);
-      renderTags();
-    }
+    // Event delegation avoids injecting the (user-controlled) name into markup.
+    tagsDiv.addEventListener('click', e => {
+      const rm = e.target.closest('.remove');
+      if (!rm) return;
+      const idx = parseInt(rm.dataset.idx, 10);
+      if (!isNaN(idx)) { players.splice(idx, 1); renderTags(); }
+    });
 
     function renderTags() {
-      tagsDiv.innerHTML = players.map(p =>
-        `<div class="player-tag">${p} <span class="remove" onclick="removePlayer('${p}')">✕</span></div>`
+      tagsDiv.innerHTML = players.map((p, i) =>
+        `<div class="player-tag">${esc(p)} <span class="remove" data-idx="${i}">✕</span></div>`
       ).join('');
       btnStart.disabled = players.length < 2;
+      saveStore({ players });
     }
 
     btnStart.onclick = () => {
       totalRounds = parseInt(document.getElementById('set-rounds').value);
       roundDuration = parseInt(document.getElementById('set-duration').value);
       currency = document.getElementById('set-currency').value;
+      saveStore({ rounds: totalRounds, duration: roundDuration, currency });
       scores = {};
       players.forEach(p => scores[p] = 0);
       currentRound = 0;
       startNextRound();
     };
+
+    // ─── Restore last session (players + settings) ───
+    (function restore() {
+      const s = loadStore();
+      if (Array.isArray(s.players)) { players = s.players.slice(0, 10); renderTags(); }
+      const setVal = (id, val) => {
+        if (val == null) return;
+        const el = document.getElementById(id);
+        if (el && [...el.options].some(o => o.value == String(val))) el.value = String(val);
+      };
+      setVal('set-rounds', s.rounds);
+      setVal('set-duration', s.duration);
+      setVal('set-currency', s.currency);
+    })();
 
     // ─── HOST SCREEN ───
     function startNextRound() {
@@ -1066,9 +1160,18 @@
 
         if (timeLeft <= 0) {
           clearInterval(timerInterval);
+          const val = parseFloat(document.getElementById('g-input').value);
+          if (val && val > 0 && !guesses[players[currentPlayerIdx]]) {
+            recordGuess(val);
+            toast('انتهى الوقت — سُجّل آخر رقم كتبته');
+          }
           nextPlayer();
         }
       }, 1000);
+    }
+
+    function recordGuess(val) {
+      guesses[players[currentPlayerIdx]] = { value: val, timestamp: Date.now() };
     }
 
     document.getElementById('btn-guess').onclick = submitGuess;
@@ -1078,7 +1181,7 @@
       const val = parseFloat(document.getElementById('g-input').value);
       if (!val || val <= 0) { toast('أدخل رقم صحيح'); return; }
       document.getElementById('btn-guess').disabled = true;
-      guesses[players[currentPlayerIdx]] = { value: val, timestamp: Date.now() };
+      recordGuess(val);
       snd(660, 0.12, 0.06);
       clearInterval(timerInterval);
       setTimeout(nextPlayer, 400);
@@ -1136,16 +1239,22 @@
       setTimeout(() => curEl.classList.add('show'), totalRevealTime + 150);
 
       // Rank
+      const PERFECT_BONUS = 2;
       const ranked = rankGuesses(guesses, currentPrice);
       const points = [3, 2, 1];
+      let anyPerfect = false;
       ranked.forEach((e, i) => {
-        if (i < 3) scores[e.name] = (scores[e.name] || 0) + points[i];
+        const base = i < 3 ? points[i] : 0;
+        e.perfect = e.value === currentPrice;
+        e.awarded = base + (e.perfect ? PERFECT_BONUS : 0);
+        if (e.perfect) anyPerfect = true;
+        if (e.awarded > 0) scores[e.name] = (scores[e.name] || 0) + e.awarded;
       });
 
       setTimeout(() => {
         renderRankings(ranked);
-        confetti(40);
-        sndWin();
+        confetti(anyPerfect ? 80 : 40);
+        if (anyPerfect) sndPerfect(); else sndWin();
       }, totalRevealTime + 600);
 
       // Scores
@@ -1183,26 +1292,28 @@
       const container = document.getElementById('r-rankings');
       container.innerHTML = '';
       const medals = ['🥇', '🥈', '🥉'];
-      const pts = [3, 2, 1];
 
       const under = ranked.filter(r => r.value <= currentPrice);
       const over = ranked.filter(r => r.value > currentPrice);
 
       function addItem(r, globalIdx) {
         const div = document.createElement('div');
-        div.className = `rank-item ${globalIdx === 0 ? 'winner' : ''} ${r.value > currentPrice ? 'over-price' : ''}`;
-        const medal = globalIdx < 3 ? medals[globalIdx] : `${globalIdx + 1}.`;
-        const diff = Math.abs(r.value - currentPrice);
         const isOver = r.value > currentPrice;
+        div.className = `rank-item ${globalIdx === 0 ? 'winner' : ''} ${isOver ? 'over-price' : ''} ${r.perfect ? 'perfect' : ''}`;
+        const medal = r.perfect ? '🎯' : (globalIdx < 3 ? medals[globalIdx] : `${globalIdx + 1}.`);
+        const diff = Math.abs(r.value - currentPrice);
         const arrow = isOver ? '↑' : '↓';
         const cls = isOver ? 'over' : 'under';
+        const diffCell = r.perfect
+          ? `<span class="rank-diff perfect-tag">مثالي</span>`
+          : `<span class="rank-diff ${cls}">${fmt(diff)}${arrow}</span>`;
 
         div.innerHTML = `
           <span class="rank-medal">${medal}</span>
-          <span class="rank-name">${r.name}</span>
-          <span class="rank-guess">${fmt(r.value)} ${currency}</span>
-          <span class="rank-diff ${cls}">${fmt(diff)}${arrow}</span>
-          <span class="rank-pts">${globalIdx < 3 ? '+' + pts[globalIdx] : ''}</span>
+          <span class="rank-name">${esc(r.name)}</span>
+          <span class="rank-guess">${fmt(r.value)} ${esc(currency)}</span>
+          ${diffCell}
+          <span class="rank-pts">${r.awarded > 0 ? '+' + r.awarded : ''}</span>
         `;
         container.appendChild(div);
         setTimeout(() => div.classList.add('show'), globalIdx * 180);
@@ -1229,7 +1340,7 @@
         didntGuess.forEach(name => {
           const div = document.createElement('div');
           div.className = 'rank-item show';
-          div.innerHTML = `<span class="rank-medal">⚠️</span><span class="rank-name">${name}</span><span style="color:var(--text-muted)">لم يخمّن</span>`;
+          div.innerHTML = `<span class="rank-medal">⚠️</span><span class="rank-name">${esc(name)}</span><span style="color:var(--text-muted)">لم يخمّن</span>`;
           container.appendChild(div);
         });
       }
@@ -1242,7 +1353,7 @@
         const medal = i < 3 ? medals[i] : `${i + 1}.`;
         return `<div class="score-row">
           <span class="score-pos">${medal}</span>
-          <span class="score-name">${s[0]}</span>
+          <span class="score-name">${esc(s[0])}</span>
           <span class="score-val">${s[1]}</span>
         </div>`;
       }).join('');
@@ -1263,7 +1374,7 @@
           div.className = `podium-block ${classes[idx]}`;
           div.innerHTML = `
             <div class="pod-medal">${medals[idx]}</div>
-            <div class="pod-name">${sorted[idx][0]}</div>
+            <div class="pod-name">${esc(sorted[idx][0])}</div>
             <div class="pod-score">${sorted[idx][1]} نقاط</div>
           `;
           podium.appendChild(div);
@@ -1277,6 +1388,7 @@
     }
 
     document.getElementById('btn-restart').onclick = () => {
+      renderTags(); // same players stay ready for another round
       show('s-setup');
     };
   </script>

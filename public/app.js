@@ -32,6 +32,11 @@ function formatNumber(num) {
   return Number(num).toLocaleString('en-US');
 }
 
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 // ─── Audio ───
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
 let audioCtx;
@@ -220,7 +225,7 @@ function updatePlayerList(players) {
   list.innerHTML = players.map(p => `
     <div class="player-chip ${p.type}">
       <span class="icon">${p.type === 'twitch' ? '🟣' : '🌐'}</span>
-      ${p.name}
+      ${esc(p.name)}
     </div>
   `).join('');
 }
@@ -254,6 +259,10 @@ document.getElementById('btn-start-round').addEventListener('click', () => {
   if (!productName) { showToast('اكتب اسم المنتج'); return; }
   if (!actualPrice || parseFloat(actualPrice) <= 0) { showToast('أدخل السعر'); return; }
   socket.emit('start-round', { productName, actualPrice: parseFloat(actualPrice) });
+});
+
+socket.on('round-error', ({ message }) => {
+  showToast(message);
 });
 
 socket.on('round-started', ({ roundNumber, totalRounds, productName, currency, duration }) => {
@@ -406,7 +415,7 @@ function renderRankings(data) {
       item.className = 'result-item';
       item.innerHTML = `
         <span class="result-rank">⚠️</span>
-        <span class="result-name">${p.name}</span>
+        <span class="result-name">${esc(p.name)}</span>
         <span style="color:var(--text-muted)">لم يخمّن</span>
       `;
       list.appendChild(item);
@@ -416,17 +425,20 @@ function renderRankings(data) {
 
 function createResultItem(r, globalIndex, medals, currency) {
   const item = document.createElement('div');
-  item.className = `result-item ${globalIndex === 0 ? 'winner' : ''} ${r.isOver ? 'over' : ''}`;
+  item.className = `result-item ${globalIndex === 0 ? 'winner' : ''} ${r.isOver ? 'over' : ''} ${r.perfect ? 'perfect' : ''}`;
   item.style.animationDelay = `${globalIndex * 0.08}s`;
-  const medal = globalIndex < 3 ? medals[globalIndex] : `${globalIndex + 1}.`;
+  const medal = r.perfect ? '🎯' : (globalIndex < 3 ? medals[globalIndex] : `${globalIndex + 1}.`);
   const diffDir = r.isOver ? '↑' : '↓';
   const diffClass = r.isOver ? 'over' : 'under';
+  const diffText = r.perfect
+    ? `<span class="result-diff perfect-tag">مثالي</span>`
+    : `<span class="result-diff ${diffClass}">${formatNumber(r.difference)}${diffDir}</span>`;
 
   item.innerHTML = `
     <span class="result-rank">${medal}</span>
-    <span class="result-name">${r.name}</span>
-    <span class="result-guess">${formatNumber(r.guess)} ${currency}</span>
-    <span class="result-diff ${diffClass}">${formatNumber(r.difference)}${diffDir}</span>
+    <span class="result-name">${esc(r.name)}</span>
+    <span class="result-guess">${formatNumber(r.guess)} ${esc(currency)}</span>
+    ${diffText}
     <span class="result-points">${r.points > 0 ? '+' + r.points + ' نقاط' : r.isOver ? '❌' : ''}</span>
   `;
   return item;
@@ -438,7 +450,7 @@ function renderScoreboard(scores, elementId) {
     const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1);
     return `<tr>
       <td class="rank-col">${medal}</td>
-      <td>${s.name} ${s.type === 'twitch' ? '🟣' : '🌐'}</td>
+      <td>${esc(s.name)} ${s.type === 'twitch' ? '🟣' : '🌐'}</td>
       <td class="score-col">${s.score}</td>
     </tr>`;
   }).join('');
@@ -468,7 +480,7 @@ function showGameOver(scores) {
       div.className = `podium-item ${classes[idx]}`;
       div.innerHTML = `
         <div class="podium-medal">${medals[idx]}</div>
-        <div class="podium-name">${s.name}</div>
+        <div class="podium-name">${esc(s.name)}</div>
         <div class="podium-score">${s.score} نقاط</div>
       `;
       podium.appendChild(div);

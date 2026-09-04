@@ -419,6 +419,24 @@ h1, h2, h3 { font-weight: 800; }
 
 .result-item.over { opacity: 0.6; }
 
+.result-item.perfect {
+  background: linear-gradient(135deg, rgba(251,191,36,0.18), rgba(251,191,36,0.06));
+  border-color: rgba(251,191,36,0.55);
+  box-shadow: 0 0 28px rgba(251,191,36,0.22);
+  animation: perfect-glow 1.4s ease-in-out infinite alternate;
+}
+
+@keyframes perfect-glow {
+  from { box-shadow: 0 0 20px rgba(251,191,36,0.15); }
+  to { box-shadow: 0 0 34px rgba(251,191,36,0.35); }
+}
+
+.result-diff.perfect-tag {
+  color: #0a0a1a;
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  font-weight: 800;
+}
+
 .result-rank {
   font-size: 1.5rem;
   width: 38px;

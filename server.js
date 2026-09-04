@@ -142,16 +142,26 @@ io.on('connection', (socket) => {
       socket.emit('join-error', { message: 'الغرفة غير موجودة' });
       return;
     }
-    if (room.players.has(playerName)) {
-      socket.emit('join-error', { message: 'الاسم مستخدم، اختر اسم ثاني' });
-      return;
+    const existing = room.players.get(playerName);
+    if (existing) {
+      // Allow reclaiming a name whose previous connection is gone (mobile
+      // networks drop often) — keep the accumulated score. Reject only if a
+      // live socket is still using that name.
+      const isTaken = existing.type === 'twitch' ||
+        (existing.socketId && io.sockets.sockets.has(existing.socketId));
+      if (isTaken) {
+        socket.emit('join-error', { message: 'الاسم مستخدم، اختر اسم ثاني' });
+        return;
+      }
+      existing.socketId = socket.id;
+      existing.type = 'web';
+    } else {
+      room.players.set(playerName, {
+        type: 'web',
+        socketId: socket.id,
+        score: 0
+      });
     }
-
-    room.players.set(playerName, {
-      type: 'web',
-      socketId: socket.id,
-      score: 0
-    });
     socket.join(roomCode);
     socket.roomCode = roomCode;
     socket.playerName = playerName;
@@ -172,6 +182,8 @@ io.on('connection', (socket) => {
       playerName,
       state: room.state,
       settings: room.settings,
+      alreadyGuessed: !!(room.state === 'active' && room.currentRound &&
+        room.currentRound.guesses && room.currentRound.guesses.has(playerName)),
       currentRound: room.currentRound ? {
         number: room.currentRound.number,
         productName: room.currentRound.productName,
@@ -195,11 +207,18 @@ io.on('connection', (socket) => {
     const room = rooms.get(socket.roomCode);
     if (!room || socket.id !== room.hostSocket) return;
 
+    const price = parseFloat(actualPrice);
+    const name = String(productName || '').trim();
+    if (!name || !isFinite(price) || price <= 0) {
+      socket.emit('round-error', { message: 'أدخل اسم المنتج وسعر صحيح' });
+      return;
+    }
+
     const roundNumber = (room.currentRound ? room.currentRound.number : 0) + 1;
     room.currentRound = {
       number: roundNumber,
-      productName,
-      actualPrice: parseFloat(actualPrice),
+      productName: name,
+      actualPrice: price,
       guesses: new Map(),
       startTime: Date.now()
     };
@@ -385,16 +404,25 @@ io.on('connection', (socket) => {
       if (room && room.players.has(socket.playerName)) {
         const player = room.players.get(socket.playerName);
         if (player.type === 'web') {
-          room.players.delete(socket.playerName);
-          io.to(room.roomCode).emit('player-left', {
-            name: socket.playerName,
-            playerCount: room.players.size
-          });
+          if (room.state === 'lobby') {
+            // No score to protect yet — free the name for others.
+            room.players.delete(socket.playerName);
+            io.to(room.roomCode).emit('player-left', {
+              name: socket.playerName,
+              playerCount: room.players.size
+            });
+          } else {
+            // Mid-game: keep the record (and score) so the player can
+            // reconnect with the same name and pick up where they left off.
+            player.socketId = null;
+          }
         }
       }
     }
   });
 });
+
+const PERFECT_BONUS = 2;
 
 function endRound(room) {
   room.state = 'results';
@@ -403,10 +431,14 @@ function endRound(room) {
 
   const points = [3, 2, 1];
   ranked.forEach((entry, index) => {
-    if (index < 3) {
+    const base = index < 3 ? points[index] : 0;
+    const perfect = entry.value === actualPrice;
+    entry.awarded = base + (perfect ? PERFECT_BONUS : 0);
+    entry.perfect = perfect;
+    if (entry.awarded > 0) {
       const player = room.players.get(entry.name);
       if (player) {
-        player.score += points[index];
+        player.score += entry.awarded;
       }
     }
   });
@@ -428,7 +460,8 @@ function endRound(room) {
       guess: entry.value,
       difference: diff,
       isOver,
-      points: index < 3 ? points[index] : 0
+      perfect: entry.perfect,
+      points: entry.awarded
     };
   });
 
@@ -461,6 +494,7 @@ function endRound(room) {
         rank: rankEntry ? rankEntry.rank : null,
         difference: rankEntry ? rankEntry.difference : null,
         isOver: rankEntry ? rankEntry.isOver : null,
+        perfect: rankEntry ? rankEntry.perfect : false,
         points: rankEntry ? rankEntry.points : 0,
         totalScore: player.score,
         didGuess: !!guess

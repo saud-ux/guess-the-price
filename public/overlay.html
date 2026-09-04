@@ -310,6 +310,18 @@
       box-shadow: 0 0 28px rgba(52,211,153,0.15), inset 0 1px 0 rgba(255,255,255,0.05);
     }
 
+    .ov-rank-row.perfect {
+      background: linear-gradient(135deg, rgba(251,191,36,0.2), rgba(251,191,36,0.06));
+      border-color: rgba(251,191,36,0.55);
+      box-shadow: 0 0 32px rgba(251,191,36,0.28), inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+
+    .ov-rank-diff.perfect-tag {
+      color: #0a0a1a;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      font-weight: 800;
+    }
+
     .ov-rank-medal { font-size: 1.8rem; min-width: 40px; text-align: center; }
     .ov-rank-name { flex: 1; font-weight: 800; font-size: 1.15rem; }
 
@@ -702,6 +714,11 @@
       return Number(num).toLocaleString('en-US');
     }
 
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
     // ─── Audio ───
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     let audioCtx;
@@ -954,18 +971,22 @@
       top5.forEach((r, i) => {
         const row = document.createElement('div');
         row.className = `ov-rank-row ${i === 0 ? 'first-place' : ''}`;
-        const medal = i < 3 ? medals[i] : `${i + 1}.`;
+        const medal = r.perfect ? '🎯' : (i < 3 ? medals[i] : `${i + 1}.`);
         const diffArrow = r.isOver ? '↑' : '↓';
         const diffClass = r.isOver ? 'over' : 'under';
         const typeLabel = r.type === 'twitch' ? 'تويتش' : 'ويب';
         const typeClass = r.type === 'twitch' ? 'twitch' : 'web';
+        const diffCell = r.perfect
+          ? `<span class="ov-rank-diff perfect-tag">مثالي</span>`
+          : `<span class="ov-rank-diff ${diffClass}">${formatNumber(r.difference)}${diffArrow}</span>`;
+        if (r.perfect) row.classList.add('perfect');
 
         row.innerHTML = `
           <span class="ov-rank-medal">${medal}</span>
-          <span class="ov-rank-name">${r.name}</span>
+          <span class="ov-rank-name">${esc(r.name)}</span>
           <span class="ov-rank-type ${typeClass}">${typeLabel}</span>
-          <span class="ov-rank-val">${formatNumber(r.guess)} ${data.currency}</span>
-          <span class="ov-rank-diff ${diffClass}">${formatNumber(r.difference)}${diffArrow}</span>
+          <span class="ov-rank-val">${formatNumber(r.guess)} ${esc(data.currency)}</span>
+          ${diffCell}
           <span class="ov-rank-pts">${r.points > 0 ? '+' + r.points : ''}</span>
         `;
 
@@ -985,7 +1006,7 @@
         const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
         return `<div class="ov-sidebar-row">
           <span class="rank-prefix">${medal}</span>
-          <span class="player-name">${s.name}</span>
+          <span class="player-name">${esc(s.name)}</span>
           <span class="score-val">${s.score}</span>
         </div>`;
       }).join('');
@@ -1011,7 +1032,7 @@
           div.className = `ov-podium-item ${cls}`;
           div.innerHTML = `
             <div class="ov-podium-medal">${medals[idx]}</div>
-            <div class="ov-podium-name">${s.name}</div>
+            <div class="ov-podium-name">${esc(s.name)}</div>
             <div class="ov-podium-score">${s.score} نقاط</div>
           `;
           podium.appendChild(div);
