@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>خمّن السعر - بدون نت</title>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0a0a1a;
+      --bg-secondary: #111128;
+      --bg-card: #161638;
+      --bg-elevated: #1c1c45;
+      --gold: #fbbf24;
+      --gold-light: #fde68a;
+      --gold-dark: #d97706;
+      --green: #34d399;
+      --green-dark: #059669;
+      --red: #f87171;
+      --red-dark: #dc2626;
+      --blue: #60a5fa;
+      --purple: #a78bfa;
+      --text: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --border: rgba(255,255,255,0.08);
+      --border-gold: rgba(251,191,36,0.25);
+      --glass: rgba(17,17,40,0.7);
+      --glass-border: rgba(255,255,255,0.12);
+      --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+      --shadow-md: 0 8px 32px rgba(0,0,0,0.4);
+      --shadow-lg: 0 16px 48px rgba(0,0,0,0.5);
+      --shadow-gold: 0 0 40px rgba(251,191,36,0.15);
+      --radius-sm: 10px;
+      --radius-md: 16px;
+      --radius-lg: 24px;
+      --radius-xl: 32px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Tajawal', Arial, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text);
+      direction: rtl;
+      min-height: 100vh;
+      min-height: 100dvh;
+      font-variant-numeric: tabular-nums;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 0%, rgba(251,191,36,0.06) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 0% 100%, rgba(99,102,241,0.05) 0%, transparent 50%),
+        radial-gradient(ellipse 60% 50% at 100% 50%, rgba(168,85,247,0.04) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 16px;
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ─── Logo ─── */
+    .logo {
+      text-align: center;
+      font-size: 2rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light), var(--gold));
+      background-size: 200% 200%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: logo-shimmer 4s ease infinite;
+      margin-bottom: 4px;
+      filter: drop-shadow(0 0 20px rgba(251,191,36,0.25));
+    }
+
+    @keyframes logo-shimmer {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    .logo-sub {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      margin-bottom: 24px;
+    }
+
+    /* ─── Screens ─── */
+    .screen { display: none; flex-direction: column; flex: 1; }
+    .screen.active {
+      display: flex;
+      animation: screen-in 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @keyframes screen-in {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ─── Sections ─── */
+    .section {
+      background: var(--bg-secondary);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      margin: 10px 0;
+      border: 1px solid var(--border);
+    }
+
+    .section-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .section-title::before {
+      content: '';
+      width: 3px;
+      height: 18px;
+      background: linear-gradient(to bottom, var(--gold), var(--gold-dark));
+      border-radius: 2px;
+    }
+
+    /* ─── Buttons ─── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 28px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-family: 'Tajawal', Arial, sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+    .btn:active { transform: translateY(0) scale(0.98); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+      color: #0a0a1a;
+      box-shadow: 0 4px 16px rgba(251,191,36,0.25);
+    }
+
+    .btn-secondary {
+      background: var(--bg-elevated);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, var(--red), var(--red-dark));
+      color: white;
+    }
+
+    .btn-small { padding: 8px 18px; font-size: 0.85rem; border-radius: 8px; }
+    .btn-full { width: 100%; }
+    .btn-big { font-size: 1.2rem; padding: 16px; border-radius: var(--radius-md); }
+
+    /* ─── Inputs ─── */
+    .input-group { margin-bottom: 14px; }
+
+    .input-group label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    .input-group input,
+    .input-group select {
+      width: 100%;
+      padding: 13px 16px;
+      background: var(--bg-primary);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-family: 'Tajawal', Arial, sans-serif;
+      font-size: 1.05rem;
+      transition: all 0.25s;
+      direction: rtl;
+      -webkit-appearance: none;
+    }
+
+    .input-group input:focus,
+    .input-group select:focus {
+      outline: none;
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(251,191,36,0.12);
+    }
+
+    .big-input {
+      text-align: center !important;
+      font-size: 2.2rem !important;
+      font-weight: 900 !important;
+      letter-spacing: 3px;
+      background: var(--bg-card) !important;
+      border-color: var(--border-gold) !important;
+      border-radius: var(--radius-md) !important;
+      padding: 18px 16px !important;
+    }
+
+    .big-input:focus {
+      box-shadow: 0 0 0 4px rgba(251,191,36,0.15), var(--shadow-gold) !important;
+      border-color: var(--gold) !important;
+    }
+
+    /* ─── Players list ─── */
+    .players-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .player-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      background: var(--bg-card);
+      border-radius: 20px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      animation: tag-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes tag-in {
+      from { opacity: 0; transform: scale(0.8); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .player-tag .remove {
+      cursor: pointer;
+      color: var(--red);
+      font-size: 0.75rem;
+      opacity: 0.7;
+      padding: 2px;
+    }
+
+    .player-tag .remove:hover { opacity: 1; }
+
+    /* ─── Timer ─── */
+    .timer-wrap {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 16px;
+    }
+
+    .timer-svg {
+      width: 120px;
+      height: 120px;
+      transform: rotate(-90deg);
+      filter: drop-shadow(0 0 8px rgba(251,191,36,0.2));
+    }
+
+    .timer-bg-circle {
+      fill: none;
+      stroke: rgba(255,255,255,0.06);
+      stroke-width: 5;
+    }
+
+    .timer-progress-circle {
+      fill: none;
+      stroke: var(--gold);
+      stroke-width: 5;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 1s linear, stroke 0.3s;
+    }
+
+    .timer-number {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 3rem;
+      font-weight: 900;
+      transition: color 0.3s;
+    }
+
+    .timer-number.warning { color: var(--gold); }
+    .timer-number.danger {
+      color: var(--red);
+      animation: t-pulse 0.5s infinite alternate;
+    }
+
+    @keyframes t-pulse {
+      to { transform: translate(-50%, -50%) scale(1.1); }
+    }
+
+    /* ─── Turn indicator ─── */
+    .turn-banner {
+      text-align: center;
+      background: linear-gradient(135deg, rgba(251,191,36,0.1), rgba(251,191,36,0.03));
+      border: 1px solid var(--border-gold);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .turn-label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .turn-name {
+      font-size: 1.8rem;
+      font-weight: 900;
+      color: var(--gold);
+    }
+
+    /* ─── Product display ─── */
+    .product-display {
+      text-align: center;
+      margin: 12px 0;
+    }
+
+    .product-ask {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 4px;
+    }
+
+    .product-title {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--gold);
+      text-shadow: 0 0 16px rgba(251,191,36,0.15);
+      margin-bottom: 4px;
+    }
+
+    .product-currency {
+      font-size: 0.88rem;
+      color: var(--gold-dark);
+      font-weight: 600;
+    }
+
+    /* ─── Round badge ─── */
+    .round-pill {
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .round-pill span {
+      display: inline-block;
+      background: var(--bg-card);
+      padding: 6px 18px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      border: 1px solid var(--border);
+    }
+
+    /* ─── Price reveal ─── */
+    .price-reveal-row {
+      display: flex;
+      justify-content: center;
+      gap: 5px;
+      margin: 20px 0;
+      direction: ltr;
+    }
+
+    .pr-digit {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 52px;
+      height: 66px;
+      background: linear-gradient(145deg, var(--bg-card), rgba(20,20,50,0.9));
+      border: 2px solid rgba(251,191,36,0.2);
+      border-radius: 12px;
+      font-size: 2.6rem;
+      font-weight: 900;
+      color: var(--gold);
+      opacity: 0;
+      transform: scale(0.3) rotateY(180deg);
+      transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .pr-digit.show {
+      opacity: 1;
+      transform: scale(1) rotateY(0deg);
+      border-color: rgba(251,191,36,0.5);
+      box-shadow: 0 0 24px rgba(251,191,36,0.2), 0 4px 16px rgba(0,0,0,0.3);
+    }
+
+    .pr-digit.show::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+      animation: d-shine 0.7s ease-out forwards;
+    }
+
+    @keyframes d-shine { to { left: 100%; } }
+
+    .pr-digit.comma-d {
+      background: transparent;
+      border: none;
+      width: 20px;
+      font-size: 2.2rem;
+      box-shadow: none;
+    }
+    .pr-digit.comma-d::before { display: none; }
+
+    .pr-currency {
+      font-size: 1.6rem;
+      color: var(--gold);
+      font-weight: 800;
+      opacity: 0;
+      transform: translateX(-16px);
+      transition: all 0.5s ease;
+      margin-right: 8px;
+      align-self: center;
+    }
+
+    .pr-currency.show {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    /* ─── Rankings ─── */
+    .rank-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 14px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 6px;
+      background: var(--bg-primary);
+      gap: 10px;
+      border: 1px solid transparent;
+      opacity: 0;
+      transform: translateX(24px);
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .rank-item.show {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .rank-item.winner {
+      background: linear-gradient(135deg, rgba(52,211,153,0.1), rgba(52,211,153,0.05));
+      border-color: rgba(52,211,153,0.3);
+      box-shadow: 0 0 20px rgba(52,211,153,0.1);
+    }
+
+    .rank-item.over-price { opacity: 0.55; }
+
+    .rank-medal { font-size: 1.4rem; width: 32px; text-align: center; }
+    .rank-name { flex: 1; font-weight: 700; font-size: 0.95rem; }
+
+    .rank-guess {
+      font-weight: 700;
+      font-size: 0.88rem;
+      direction: ltr;
+      color: var(--text-secondary);
+    }
+
+    .rank-diff {
+      font-size: 0.8rem;
+      font-weight: 700;
+      direction: ltr;
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+
+    .rank-diff.under { color: var(--green); background: rgba(52,211,153,0.1); }
+    .rank-diff.over { color: var(--red); background: rgba(248,113,113,0.1); }
+
+    .rank-pts {
+      font-weight: 900;
+      color: var(--gold);
+      font-size: 0.85rem;
+      min-width: 40px;
+      text-align: center;
+    }
+
+    /* ─── Scoreboard ─── */
+    .score-row {
+      display: flex;
+      align-items: center;
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      gap: 10px;
+    }
+
+    .score-row:last-child { border-bottom: none; }
+
+    .score-pos { width: 30px; text-align: center; font-size: 1.1rem; }
+    .score-name { flex: 1; font-weight: 700; }
+    .score-val { color: var(--gold); font-weight: 800; font-size: 1.1rem; }
+
+    /* ─── Podium ─── */
+    .podium {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 10px;
+      margin: 24px 0;
+    }
+
+    .podium-block {
+      text-align: center;
+      padding: 16px 14px;
+      border-radius: var(--radius-md) var(--radius-md) 0 0;
+      min-width: 100px;
+      position: relative;
+      overflow: hidden;
+      opacity: 0;
+      transform: translateY(30px);
+      animation: pod-up 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    .podium-block::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(255,255,255,0.04), transparent);
+      pointer-events: none;
+    }
+
+    .podium-block.p1 {
+      background: linear-gradient(to top, rgba(251,191,36,0.12), var(--bg-card));
+      border: 1px solid rgba(251,191,36,0.3);
+      border-bottom: none;
+      min-height: 170px;
+      animation-delay: 0.25s;
+    }
+
+    .podium-block.p2 {
+      background: linear-gradient(to top, rgba(192,192,192,0.08), var(--bg-card));
+      border: 1px solid rgba(192,192,192,0.2);
+      border-bottom: none;
+      min-height: 130px;
+      animation-delay: 0.1s;
+    }
+
+    .podium-block.p3 {
+      background: linear-gradient(to top, rgba(205,127,50,0.08), var(--bg-card));
+      border: 1px solid rgba(205,127,50,0.2);
+      border-bottom: none;
+      min-height: 100px;
+      animation-delay: 0.4s;
+    }
+
+    @keyframes pod-up {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .pod-medal { font-size: 2.4rem; margin-bottom: 8px; }
+    .pod-name { font-weight: 800; font-size: 1rem; margin-bottom: 4px; }
+    .pod-score { color: var(--gold); font-weight: 700; font-size: 0.95rem; }
+
+    /* ─── Divider ─── */
+    .divider {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      margin: 12px 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 600;
+    }
+
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--border), transparent);
+    }
+
+    /* ─── Toast ─── */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--bg-elevated);
+      color: var(--text);
+      padding: 12px 28px;
+      border-radius: var(--radius-md);
+      font-weight: 700;
+      z-index: 9999;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--shadow-md);
+      font-size: 0.9rem;
+    }
+
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ─── Pass screen ─── */
+    .pass-screen {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .pass-icon {
+      font-size: 4rem;
+      margin-bottom: 16px;
+    }
+
+    .pass-text {
+      font-size: 1.3rem;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .pass-sub {
+      color: var(--text-muted);
+      margin-bottom: 28px;
+    }
+
+    /* ─── Hint ─── */
+    .hint {
+      text-align: center;
+      margin-top: 12px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .hint.gold { color: var(--gold); font-weight: 700; }
+
+    /* ─── Spacer ─── */
+    .spacer { flex: 1; }
+
+    /* ─── Settings row ─── */
+    .settings-flex {
+      display: flex;
+      gap: 10px;
+    }
+
+    .settings-flex .input-group { flex: 1; }
+
+    /* ─── Particles ─── */
+    .particles {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    .confetti {
+      position: absolute;
+      border-radius: 50%;
+    }
+
+    @keyframes c-fall {
+      0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+    }
+
+    @media (max-width: 380px) {
+      .pr-digit { width: 40px; height: 54px; font-size: 2rem; }
+      .podium-block { min-width: 80px; padding: 12px 8px; }
+      .big-input { font-size: 1.8rem !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- ══════ 1. SETUP ══════ -->
+    <div id="s-setup" class="screen active">
+      <h1 class="logo">خمّن السعر</h1>
+      <div class="logo-sub">النسخة بدون نت — مررها لصاحبك!</div>
+
+      <div class="section">
+        <div class="section-title">اللاعبين</div>
+        <div style="display:flex; gap:8px;">
+          <div class="input-group" style="flex:1; margin-bottom:0;">
+            <input type="text" id="add-name" placeholder="اسم اللاعب" maxlength="15">
+          </div>
+          <button class="btn btn-secondary" id="btn-add" style="align-self:flex-end; padding:13px 20px;">أضف</button>
+        </div>
+        <div class="players-tags" id="players-tags"></div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">إعدادات</div>
+        <div class="settings-flex">
+          <div class="input-group">
+            <label>عدد الجولات</label>
+            <select id="set-rounds">
+              <option value="3">3</option>
+              <option value="5" selected>5</option>
+              <option value="7">7</option>
+              <option value="10">10</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label>وقت الجولة</label>
+            <select id="set-duration">
+              <option value="10">10 ثانية</option>
+              <option value="15">15 ثانية</option>
+              <option value="20" selected>20 ثانية</option>
+              <option value="30">30 ثانية</option>
+              <option value="45">45 ثانية</option>
+            </select>
+          </div>
+        </div>
+        <div class="input-group">
+          <label>العملة</label>
+          <select id="set-currency">
+            <option value="⃁" selected>⃁ ريال</option>
+            <option value="$">$ دولار</option>
+            <option value="€">€ يورو</option>
+            <option value="£">£ جنيه</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="spacer"></div>
+      <button class="btn btn-primary btn-full btn-big" id="btn-start" disabled>ابدأ اللعبة</button>
+    </div>
+
+    <!-- ══════ 2. HOST SETS PRODUCT ══════ -->
+    <div id="s-host" class="screen">
+      <div class="round-pill"><span>الجولة <b id="h-round">1</b>/<b id="h-total">5</b></span></div>
+
+      <div class="section">
+        <div class="section-title">المنتج (يدخله الهوست)</div>
+        <div class="input-group">
+          <label>اسم المنتج</label>
+          <input type="text" id="h-product" placeholder="مثال: آيفون 16 برو">
+        </div>
+        <div class="input-group">
+          <label>السعر الحقيقي</label>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input type="number" id="h-price" placeholder="4999" dir="ltr" inputmode="decimal" style="flex:1; text-align:left;">
+            <span style="color:var(--gold); font-weight:800; font-size:1.1rem;" id="h-cur-label">⃁</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="hint gold">لا تخلي أحد يشوف السعر!</div>
+
+      <div class="spacer"></div>
+      <button class="btn btn-primary btn-full btn-big" id="btn-go-round">ابدأ الجولة</button>
+    </div>
+
+    <!-- ══════ 3. PASS DEVICE ══════ -->
+    <div id="s-pass" class="screen">
+      <div class="pass-screen">
+        <div class="pass-icon">📱</div>
+        <div class="pass-text">مرر الجوال إلى</div>
+        <div class="turn-name" id="pass-name"></div>
+        <div class="pass-sub">خل يضغط "جاهز" عشان يخمّن</div>
+        <button class="btn btn-primary btn-big" id="btn-ready" style="min-width:200px;">جاهز!</button>
+      </div>
+    </div>
+
+    <!-- ══════ 4. GUESS ══════ -->
+    <div id="s-guess" class="screen">
+      <div class="round-pill"><span>الجولة <b id="g-round">1</b>/<b id="g-total">5</b></span></div>
+
+      <div class="timer-wrap">
+        <svg class="timer-svg" viewBox="0 0 120 120">
+          <circle class="timer-bg-circle" cx="60" cy="60" r="52" />
+          <circle class="timer-progress-circle" id="g-timer-prog" cx="60" cy="60" r="52"
+            stroke-dasharray="326.73" stroke-dashoffset="0" />
+        </svg>
+        <div class="timer-number" id="g-timer-num">20</div>
+      </div>
+
+      <div class="turn-banner">
+        <div class="turn-label">دورك يا</div>
+        <div class="turn-name" id="g-player-name"></div>
+      </div>
+
+      <div class="product-display">
+        <div class="product-ask">كم سعر</div>
+        <div class="product-title" id="g-product"></div>
+        <div class="product-currency">(<span id="g-currency"></span>)</div>
+      </div>
+
+      <div class="input-group">
+        <input type="number" id="g-input" class="big-input" inputmode="decimal" placeholder="0" dir="ltr" min="1" step="any">
+      </div>
+
+      <button class="btn btn-primary btn-full btn-big" id="btn-guess">أرسل تخمينك</button>
+      <div class="hint gold">أول تخمين فقط!</div>
+      <div class="hint">الأقرب بدون تجاوز يفوز</div>
+    </div>
+
+    <!-- ══════ 5. RESULTS ══════ -->
+    <div id="s-results" class="screen">
+      <div class="round-pill"><span>الجولة <b id="r-round">1</b>/<b id="r-total">5</b> — النتيجة</span></div>
+
+      <div class="product-display">
+        <div class="product-title" id="r-product" style="font-size:1.3rem;"></div>
+        <div style="color:var(--text-muted); font-size:0.88rem; margin-top:4px;">السعر الحقيقي</div>
+      </div>
+
+      <div class="price-reveal-row" id="r-price-row"></div>
+
+      <div class="section" style="padding:14px;">
+        <div id="r-rankings"></div>
+      </div>
+
+      <div class="section" style="padding:14px;">
+        <div class="section-title" style="margin-bottom:8px;">لوحة النقاط</div>
+        <div id="r-scores"></div>
+      </div>
+
+      <div class="spacer"></div>
+      <button class="btn btn-primary btn-full btn-big" id="btn-next"></button>
+    </div>
+
+    <!-- ══════ 6. GAME OVER ══════ -->
+    <div id="s-gameover" class="screen">
+      <h1 class="logo" style="font-size:1.6rem;">انتهت اللعبة!</h1>
+
+      <div class="podium" id="go-podium"></div>
+
+      <div class="section" style="padding:14px;">
+        <div class="section-title" style="margin-bottom:8px;">الترتيب النهائي</div>
+        <div id="go-scores"></div>
+      </div>
+
+      <div class="spacer"></div>
+      <button class="btn btn-primary btn-full btn-big" id="btn-restart">لعبة جديدة</button>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div class="particles" id="particles"></div>
+
+  <script>
+    // ─── State ───
+    let players = [];
+    let scores = {};
+    let totalRounds = 5;
+    let roundDuration = 20;
+    let currency = '⃁';
+    let currentRound = 0;
+    let currentProduct = '';
+    let currentPrice = 0;
+    let currentPlayerIdx = 0;
+    let guesses = {};
+    let timerInterval = null;
+    let timeLeft = 0;
+    const circumference = 2 * Math.PI * 52;
+
+    // ─── Screens ───
+    const allScreens = document.querySelectorAll('.screen');
+    function show(id) {
+      allScreens.forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    function toast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2500);
+    }
+
+    function fmt(n) { return Number(n).toLocaleString('en-US'); }
+
+    // ─── Audio ───
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx;
+    function ac() { if (!audioCtx) audioCtx = new AudioCtx(); return audioCtx; }
+
+    function snd(freq, dur, vol) {
+      try {
+        const c = ac(), o = c.createOscillator(), g = c.createGain();
+        o.connect(g); g.connect(c.destination);
+        o.frequency.value = freq; g.gain.value = vol || 0.05;
+        o.start();
+        g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + dur);
+        o.stop(c.currentTime + dur);
+      } catch(e) {}
+    }
+
+    function sndWin() {
+      [523, 659, 784, 1047].forEach((f, i) => {
+        setTimeout(() => snd(f, 0.25, 0.05), i * 120);
+      });
+    }
+
+    function sndReveal(i, total) {
+      snd(350 + (i / Math.max(total, 1)) * 800, 0.15, 0.06);
+    }
+
+    // ─── Confetti ───
+    function confetti(count) {
+      const c = document.getElementById('particles');
+      const cols = ['#fbbf24','#34d399','#f87171','#60a5fa','#a78bfa','#f472b6','#fde68a'];
+      for (let i = 0; i < count; i++) {
+        const p = document.createElement('div');
+        p.className = 'confetti';
+        const sz = 4 + Math.random() * 10;
+        const dur = 2 + Math.random() * 3;
+        p.style.cssText = `width:${sz}px;height:${sz*(Math.random()>0.4?1:0.5)}px;left:${Math.random()*100}%;top:-10px;background:${cols[Math.floor(Math.random()*cols.length)]};border-radius:${Math.random()>0.5?'50%':'2px'};animation:c-fall ${dur}s ease-in forwards;animation-delay:${Math.random()*0.6}s;`;
+        c.appendChild(p);
+        setTimeout(() => p.remove(), (dur + 1) * 1000);
+      }
+    }
+
+    // ─── SETUP ───
+    const addNameInput = document.getElementById('add-name');
+    const btnAdd = document.getElementById('btn-add');
+    const tagsDiv = document.getElementById('players-tags');
+    const btnStart = document.getElementById('btn-start');
+
+    btnAdd.onclick = addPlayer;
+    addNameInput.addEventListener('keydown', e => { if (e.key === 'Enter') addPlayer(); });
+
+    function addPlayer() {
+      const name = addNameInput.value.trim();
+      if (!name) return;
+      if (players.includes(name)) { toast('الاسم موجود'); return; }
+      if (players.length >= 10) { toast('الحد الأقصى 10 لاعبين'); return; }
+      players.push(name);
+      addNameInput.value = '';
+      addNameInput.focus();
+      renderTags();
+    }
+
+    function removePlayer(name) {
+      players = players.filter(p => p !== name);
+      renderTags();
+    }
+
+    function renderTags() {
+      tagsDiv.innerHTML = players.map(p =>
+        `<div class="player-tag">${p} <span class="remove" onclick="removePlayer('${p}')">✕</span></div>`
+      ).join('');
+      btnStart.disabled = players.length < 2;
+    }
+
+    btnStart.onclick = () => {
+      totalRounds = parseInt(document.getElementById('set-rounds').value);
+      roundDuration = parseInt(document.getElementById('set-duration').value);
+      currency = document.getElementById('set-currency').value;
+      scores = {};
+      players.forEach(p => scores[p] = 0);
+      currentRound = 0;
+      startNextRound();
+    };
+
+    // ─── HOST SCREEN ───
+    function startNextRound() {
+      currentRound++;
+      document.getElementById('h-round').textContent = currentRound;
+      document.getElementById('h-total').textContent = totalRounds;
+      document.getElementById('h-product').value = '';
+      document.getElementById('h-price').value = '';
+      document.getElementById('h-cur-label').textContent = currency;
+      show('s-host');
+      document.getElementById('h-product').focus();
+    }
+
+    document.getElementById('btn-go-round').onclick = () => {
+      const product = document.getElementById('h-product').value.trim();
+      const price = parseFloat(document.getElementById('h-price').value);
+      if (!product) { toast('اكتب اسم المنتج'); return; }
+      if (!price || price <= 0) { toast('أدخل السعر'); return; }
+      currentProduct = product;
+      currentPrice = price;
+      guesses = {};
+      currentPlayerIdx = 0;
+      showPass();
+    };
+
+    // ─── PASS SCREEN ───
+    function showPass() {
+      if (currentPlayerIdx >= players.length) {
+        showResults();
+        return;
+      }
+      document.getElementById('pass-name').textContent = players[currentPlayerIdx];
+      show('s-pass');
+    }
+
+    document.getElementById('btn-ready').onclick = () => {
+      startGuess();
+    };
+
+    // ─── GUESS SCREEN ───
+    function startGuess() {
+      const pName = players[currentPlayerIdx];
+      document.getElementById('g-round').textContent = currentRound;
+      document.getElementById('g-total').textContent = totalRounds;
+      document.getElementById('g-player-name').textContent = pName;
+      document.getElementById('g-product').textContent = currentProduct;
+      document.getElementById('g-currency').textContent = currency;
+      document.getElementById('g-input').value = '';
+      document.getElementById('btn-guess').disabled = false;
+
+      timeLeft = roundDuration;
+      document.getElementById('g-timer-num').textContent = timeLeft;
+      document.getElementById('g-timer-num').className = 'timer-number';
+      const prog = document.getElementById('g-timer-prog');
+      prog.style.strokeDashoffset = '0';
+      prog.style.stroke = 'var(--gold)';
+
+      show('s-guess');
+      setTimeout(() => document.getElementById('g-input').focus(), 150);
+
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        document.getElementById('g-timer-num').textContent = timeLeft;
+        const ratio = 1 - (timeLeft / roundDuration);
+        prog.style.strokeDashoffset = circumference * ratio;
+
+        if (timeLeft <= 3) {
+          prog.style.stroke = 'var(--red)';
+          document.getElementById('g-timer-num').className = 'timer-number danger';
+          snd(440, 0.08, 0.04);
+        } else if (timeLeft <= 5) {
+          prog.style.stroke = 'var(--gold)';
+          document.getElementById('g-timer-num').className = 'timer-number warning';
+        }
+
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          nextPlayer();
+        }
+      }, 1000);
+    }
+
+    document.getElementById('btn-guess').onclick = submitGuess;
+    document.getElementById('g-input').addEventListener('keydown', e => { if (e.key === 'Enter') submitGuess(); });
+
+    function submitGuess() {
+      const val = parseFloat(document.getElementById('g-input').value);
+      if (!val || val <= 0) { toast('أدخل رقم صحيح'); return; }
+      document.getElementById('btn-guess').disabled = true;
+      guesses[players[currentPlayerIdx]] = { value: val, timestamp: Date.now() };
+      snd(660, 0.12, 0.06);
+      clearInterval(timerInterval);
+      setTimeout(nextPlayer, 400);
+    }
+
+    function nextPlayer() {
+      currentPlayerIdx++;
+      showPass();
+    }
+
+    // ─── RESULTS ───
+    function showResults() {
+      document.getElementById('r-round').textContent = currentRound;
+      document.getElementById('r-total').textContent = totalRounds;
+      document.getElementById('r-product').textContent = currentProduct;
+
+      // Price reveal
+      const priceStr = fmt(currentPrice);
+      const container = document.getElementById('r-price-row');
+      container.innerHTML = '';
+      const chars = priceStr.split('');
+      const digitEls = [];
+
+      chars.forEach(ch => {
+        const span = document.createElement('span');
+        if (ch === ',') {
+          span.className = 'pr-digit comma-d';
+          span.textContent = ',';
+        } else {
+          span.className = 'pr-digit';
+          span.textContent = ch;
+        }
+        container.appendChild(span);
+        digitEls.push(span);
+      });
+
+      const curEl = document.createElement('span');
+      curEl.className = 'pr-currency';
+      curEl.textContent = currency;
+      container.appendChild(curEl);
+
+      const reversed = [...digitEls].reverse();
+      const nonComma = reversed.filter(d => !d.classList.contains('comma-d'));
+
+      reversed.forEach((d, i) => {
+        setTimeout(() => {
+          d.classList.add('show');
+          if (!d.classList.contains('comma-d')) {
+            sndReveal(nonComma.indexOf(d), nonComma.length);
+          }
+        }, 400 + i * 250);
+      });
+
+      const totalRevealTime = 400 + reversed.length * 250;
+      setTimeout(() => curEl.classList.add('show'), totalRevealTime + 150);
+
+      // Rank
+      const ranked = rankGuesses(guesses, currentPrice);
+      const points = [3, 2, 1];
+      ranked.forEach((e, i) => {
+        if (i < 3) scores[e.name] = (scores[e.name] || 0) + points[i];
+      });
+
+      setTimeout(() => {
+        renderRankings(ranked);
+        confetti(40);
+        sndWin();
+      }, totalRevealTime + 600);
+
+      // Scores
+      renderScores(document.getElementById('r-scores'));
+
+      // Next button
+      const btnNext = document.getElementById('btn-next');
+      if (currentRound >= totalRounds) {
+        btnNext.textContent = 'عرض النتيجة النهائية';
+        btnNext.onclick = showGameOver;
+      } else {
+        btnNext.textContent = 'الجولة التالية';
+        btnNext.onclick = startNextRound;
+      }
+
+      show('s-results');
+    }
+
+    function rankGuesses(guessMap, actualPrice) {
+      const entries = Object.entries(guessMap).map(([name, d]) => ({
+        name, value: d.value, timestamp: d.timestamp
+      }));
+
+      const under = entries.filter(g => g.value <= actualPrice);
+      const over = entries.filter(g => g.value > actualPrice);
+
+      under.sort((a, b) => b.value !== a.value ? b.value - a.value : a.timestamp - b.timestamp);
+      over.sort((a, b) => a.value !== b.value ? a.value - b.value : a.timestamp - b.timestamp);
+
+      if (under.length === 0) return over;
+      return [...under, ...over];
+    }
+
+    function renderRankings(ranked) {
+      const container = document.getElementById('r-rankings');
+      container.innerHTML = '';
+      const medals = ['🥇', '🥈', '🥉'];
+      const pts = [3, 2, 1];
+
+      const under = ranked.filter(r => r.value <= currentPrice);
+      const over = ranked.filter(r => r.value > currentPrice);
+
+      function addItem(r, globalIdx) {
+        const div = document.createElement('div');
+        div.className = `rank-item ${globalIdx === 0 ? 'winner' : ''} ${r.value > currentPrice ? 'over-price' : ''}`;
+        const medal = globalIdx < 3 ? medals[globalIdx] : `${globalIdx + 1}.`;
+        const diff = Math.abs(r.value - currentPrice);
+        const isOver = r.value > currentPrice;
+        const arrow = isOver ? '↑' : '↓';
+        const cls = isOver ? 'over' : 'under';
+
+        div.innerHTML = `
+          <span class="rank-medal">${medal}</span>
+          <span class="rank-name">${r.name}</span>
+          <span class="rank-guess">${fmt(r.value)} ${currency}</span>
+          <span class="rank-diff ${cls}">${fmt(diff)}${arrow}</span>
+          <span class="rank-pts">${globalIdx < 3 ? '+' + pts[globalIdx] : ''}</span>
+        `;
+        container.appendChild(div);
+        setTimeout(() => div.classList.add('show'), globalIdx * 180);
+      }
+
+      under.forEach(r => addItem(r, ranked.indexOf(r)));
+
+      if (over.length > 0 && under.length > 0) {
+        const d = document.createElement('div');
+        d.className = 'divider';
+        d.textContent = 'تجاوزوا السعر';
+        container.appendChild(d);
+      }
+
+      over.forEach(r => addItem(r, ranked.indexOf(r)));
+
+      // Didn't guess
+      const didntGuess = players.filter(p => !guesses[p]);
+      if (didntGuess.length > 0) {
+        const d = document.createElement('div');
+        d.className = 'divider';
+        d.textContent = 'لم يخمّن';
+        container.appendChild(d);
+        didntGuess.forEach(name => {
+          const div = document.createElement('div');
+          div.className = 'rank-item show';
+          div.innerHTML = `<span class="rank-medal">⚠️</span><span class="rank-name">${name}</span><span style="color:var(--text-muted)">لم يخمّن</span>`;
+          container.appendChild(div);
+        });
+      }
+    }
+
+    function renderScores(container) {
+      const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+      const medals = ['🥇', '🥈', '🥉'];
+      container.innerHTML = sorted.map((s, i) => {
+        const medal = i < 3 ? medals[i] : `${i + 1}.`;
+        return `<div class="score-row">
+          <span class="score-pos">${medal}</span>
+          <span class="score-name">${s[0]}</span>
+          <span class="score-val">${s[1]}</span>
+        </div>`;
+      }).join('');
+    }
+
+    // ─── GAME OVER ───
+    function showGameOver() {
+      const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+      const medals = ['🥇', '🥈', '🥉'];
+      const classes = ['p1', 'p2', 'p3'];
+      const order = [1, 0, 2];
+
+      const podium = document.getElementById('go-podium');
+      podium.innerHTML = '';
+      order.forEach(idx => {
+        if (sorted[idx]) {
+          const div = document.createElement('div');
+          div.className = `podium-block ${classes[idx]}`;
+          div.innerHTML = `
+            <div class="pod-medal">${medals[idx]}</div>
+            <div class="pod-name">${sorted[idx][0]}</div>
+            <div class="pod-score">${sorted[idx][1]} نقاط</div>
+          `;
+          podium.appendChild(div);
+        }
+      });
+
+      renderScores(document.getElementById('go-scores'));
+      confetti(80);
+      sndWin();
+      show('s-gameover');
+    }
+
+    document.getElementById('btn-restart').onclick = () => {
+      show('s-setup');
+    };
+  </script>
+</body>
+</html>
