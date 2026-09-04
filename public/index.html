@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>خمّن السعر - الهوست</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+
+    <!-- شاشة اللوبي -->
+    <div id="screen-lobby" class="screen active">
+      <h1 class="logo">خمّن السعر 💰</h1>
+
+      <div id="room-info" class="room-code-display" style="display:none;">
+        <div class="label">كود الغرفة</div>
+        <div class="code" id="room-code"></div>
+        <button class="btn btn-secondary btn-small copy-btn" id="btn-copy-link">نسخ الرابط</button>
+      </div>
+
+      <div id="pre-room" style="text-align:center; padding:40px 0;">
+        <button class="btn btn-primary" id="btn-create-room" style="font-size:1.2rem; padding:16px 40px;">إنشاء غرفة جديدة</button>
+      </div>
+
+      <div id="lobby-content" style="display:none;">
+        <!-- تويتش -->
+        <div class="section">
+          <div class="section-title">تويتش (اختياري)</div>
+          <div style="display:flex; gap:8px; align-items:flex-end;">
+            <div class="input-group" style="flex:1; margin-bottom:0;">
+              <label>اسم القناة</label>
+              <input type="text" id="twitch-channel" placeholder="اسم القناة بدون @" dir="ltr">
+            </div>
+            <button class="btn btn-secondary" id="btn-twitch-connect">اتصال</button>
+          </div>
+          <div class="twitch-status" id="twitch-status" style="display:none;">
+            <span class="twitch-dot" id="twitch-dot"></span>
+            <span id="twitch-status-text"></span>
+          </div>
+        </div>
+
+        <!-- اللاعبين -->
+        <div class="section">
+          <div class="section-title">اللاعبين (<span id="player-count">0</span>)</div>
+          <div class="player-list" id="player-list"></div>
+          <div id="no-players" style="color:var(--text-muted); text-align:center; padding:16px;">
+            بانتظار اللاعبين...
+          </div>
+        </div>
+
+        <!-- إعدادات -->
+        <div class="section">
+          <div class="section-title">إعدادات</div>
+          <div class="settings-row">
+            <div class="input-group">
+              <label>عدد الجولات</label>
+              <select id="setting-rounds">
+                <option value="3">3</option>
+                <option value="5">5</option>
+                <option value="7">7</option>
+                <option value="10" selected>10</option>
+                <option value="15">15</option>
+                <option value="20">20</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label>وقت الجولة</label>
+              <select id="setting-duration">
+                <option value="10">10 ثانية</option>
+                <option value="15">15 ثانية</option>
+                <option value="20" selected>20 ثانية</option>
+                <option value="30">30 ثانية</option>
+                <option value="45">45 ثانية</option>
+                <option value="60">60 ثانية</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label>العملة</label>
+              <select id="setting-currency">
+                <option value="⃁" selected>⃁ ريال سعودي</option>
+                <option value="$">$ دولار</option>
+                <option value="د.إ">د.إ درهم</option>
+                <option value="د.ك">د.ك دينار</option>
+                <option value="€">€ يورو</option>
+                <option value="£">£ جنيه</option>
+              </select>
+            </div>
+          </div>
+          <div class="input-group">
+            <label>عملة مخصصة (اختياري)</label>
+            <input type="text" id="custom-currency" placeholder="اكتب رمز العملة هنا">
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-full" id="btn-start-game" style="font-size:1.2rem; padding:16px;" disabled>
+          ابدأ اللعبة
+        </button>
+      </div>
+    </div>
+
+    <!-- شاشة إعداد الجولة -->
+    <div id="screen-setup" class="screen">
+      <div class="round-header">
+        <span class="round-badge">الجولة <span id="setup-round-num">1</span>/<span id="setup-total-rounds">10</span></span>
+      </div>
+
+      <div class="section">
+        <div class="input-group">
+          <label>اسم المنتج</label>
+          <input type="text" id="product-name" placeholder="مثال: آيفون 16 برو">
+        </div>
+        <div class="input-group">
+          <label>السعر الحقيقي (مخفي عن اللاعبين)</label>
+          <div class="price-input-wrapper">
+            <input type="number" id="actual-price" placeholder="4999" dir="ltr" inputmode="decimal">
+            <span class="currency-label" id="currency-label">⃁</span>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-full" id="btn-start-round" style="font-size:1.2rem; padding:16px;">
+        ابدأ الجولة
+      </button>
+    </div>
+
+    <!-- شاشة أثناء الجولة -->
+    <div id="screen-active" class="screen">
+      <div class="round-header">
+        <span class="round-badge">الجولة <span id="active-round-num">1</span>/<span id="active-total-rounds">10</span></span>
+        <div class="timer-circle" id="timer-circle">
+          <span id="timer-value">20</span>
+        </div>
+      </div>
+
+      <div class="product-name" id="active-product-name"></div>
+      <div style="text-align:center; color:var(--text-muted); margin-bottom:12px;">
+        العملة: <span id="active-currency" style="color:var(--gold);"></span>
+      </div>
+
+      <div class="price-hidden">❓❓❓❓</div>
+
+      <div class="guess-counter">
+        التخمينات المستلمة: <span id="guess-count">0</span>/<span id="guess-total">0</span>
+      </div>
+
+      <div style="text-align:center; color:var(--text-muted); margin-top:8px;">
+        التخمينات مخفية حتى انتهاء الوقت
+      </div>
+
+      <div style="text-align:center; margin-top:16px;">
+        <button class="btn btn-danger btn-small" id="btn-end-early">إنهاء الجولة مبكراً</button>
+      </div>
+    </div>
+
+    <!-- شاشة النتائج -->
+    <div id="screen-results" class="screen">
+      <div class="round-header">
+        <span class="round-badge">الجولة <span id="result-round-num">1</span>/<span id="result-total-rounds">10</span> — النتيجة</span>
+      </div>
+
+      <div class="product-name" id="result-product-name"></div>
+
+      <div style="text-align:center; margin-bottom:8px; color:var(--text-muted);">السعر الحقيقي</div>
+      <div class="price-reveal" id="price-reveal"></div>
+
+      <div class="section">
+        <div class="section-title">الترتيب (الأقرب بدون تجاوز)</div>
+        <div id="rankings-list"></div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">لوحة النقاط</div>
+        <table class="score-table">
+          <thead>
+            <tr><th class="rank-col">#</th><th>اللاعب</th><th class="score-col">النقاط</th></tr>
+          </thead>
+          <tbody id="scoreboard"></tbody>
+        </table>
+      </div>
+
+      <button class="btn btn-primary btn-full" id="btn-next-round" style="font-size:1.2rem; padding:16px;"></button>
+    </div>
+
+    <!-- شاشة النهاية -->
+    <div id="screen-gameover" class="screen">
+      <h1 class="logo">انتهت اللعبة! 🏆</h1>
+
+      <div class="final-podium" id="final-podium"></div>
+
+      <div class="section">
+        <div class="section-title">الترتيب النهائي</div>
+        <table class="score-table">
+          <thead>
+            <tr><th class="rank-col">#</th><th>اللاعب</th><th class="score-col">النقاط</th></tr>
+          </thead>
+          <tbody id="final-scoreboard"></tbody>
+        </table>
+      </div>
+
+      <button class="btn btn-primary btn-full" id="btn-new-game" style="font-size:1.2rem; padding:16px; margin-top:16px;">
+        لعبة جديدة
+      </button>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

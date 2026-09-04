@@ -1,0 +1,18 @@
+{
+  "name": "guess-the-price",
+  "version": "1.0.0",
+  "description": "خمّن السعر - لعبة تفاعلية",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.4",
+    "tmi.js": "^1.8.5"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.3"
+  }
+}

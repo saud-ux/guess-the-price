@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>خمّن السعر - أوفرلاي</title>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --gold: #f1c40f;
+      --green: #2ecc71;
+      --red: #e74c3c;
+      --text: #eee;
+      --bg-card: rgba(15,52,96,0.85);
+      --bg-dark: rgba(26,26,46,0.9);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Tajawal', sans-serif;
+      background: transparent;
+      color: var(--text);
+      direction: rtl;
+      font-variant-numeric: tabular-nums;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    .overlay-container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+    }
+
+    /* Header bar */
+    .overlay-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-dark);
+      border-radius: 16px;
+      padding: 12px 20px;
+      margin-bottom: 16px;
+      border: 1px solid rgba(241,196,15,0.3);
+    }
+
+    .overlay-round {
+      font-weight: 800;
+      font-size: 1.2rem;
+    }
+
+    .overlay-timer {
+      font-size: 2rem;
+      font-weight: 900;
+      min-width: 60px;
+      text-align: center;
+      transition: color 0.3s;
+    }
+
+    .overlay-timer.warning { color: var(--gold); }
+    .overlay-timer.danger {
+      color: var(--red);
+      animation: pulse-text 0.5s infinite alternate;
+    }
+
+    @keyframes pulse-text {
+      to { transform: scale(1.1); opacity: 0.8; }
+    }
+
+    .overlay-guesses {
+      font-size: 1rem;
+      color: rgba(255,255,255,0.7);
+    }
+
+    /* Main content */
+    .overlay-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .overlay-product {
+      font-size: 2.5rem;
+      font-weight: 900;
+      text-align: center;
+      margin-bottom: 12px;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+    }
+
+    .overlay-currency {
+      font-size: 1.2rem;
+      color: var(--gold);
+      margin-bottom: 20px;
+    }
+
+    /* Price display */
+    .overlay-price-area {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      margin: 20px 0;
+      direction: ltr;
+    }
+
+    .overlay-price-hidden {
+      font-size: 4rem;
+      letter-spacing: 12px;
+      text-align: center;
+      animation: mystery-pulse 2s infinite;
+    }
+
+    @keyframes mystery-pulse {
+      0%, 100% { opacity: 1; text-shadow: 0 0 20px rgba(241,196,15,0.5); }
+      50% { opacity: 0.7; text-shadow: 0 0 40px rgba(241,196,15,0.8); }
+    }
+
+    /* Price reveal digits */
+    .ov-digit {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-card);
+      border: 2px solid rgba(241,196,15,0.3);
+      border-radius: 12px;
+      font-size: 3.5rem;
+      font-weight: 900;
+      min-width: 64px;
+      height: 80px;
+      color: var(--gold);
+      opacity: 0;
+      transform: scale(0.3) rotateY(180deg);
+      transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .ov-digit.revealed {
+      opacity: 1;
+      transform: scale(1) rotateY(0deg);
+      box-shadow: 0 0 30px rgba(241,196,15,0.4);
+    }
+
+    .ov-digit.revealed::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.1) 50%, transparent 60%);
+      animation: shine 0.6s ease-out;
+    }
+
+    @keyframes shine {
+      from { transform: translateX(-100%); }
+      to { transform: translateX(100%); }
+    }
+
+    .ov-digit.comma {
+      background: transparent;
+      border: none;
+      min-width: 24px;
+      font-size: 3rem;
+      box-shadow: none;
+    }
+
+    .ov-digit.comma::after { display: none; }
+
+    .ov-currency-symbol {
+      font-size: 2rem;
+      color: var(--gold);
+      opacity: 0;
+      transform: translateX(-20px);
+      transition: all 0.5s ease;
+      margin-right: 8px;
+    }
+
+    .ov-currency-symbol.revealed {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    /* Particles */
+    .particle-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    .particle {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    @keyframes particle-fall {
+      0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+    }
+
+    /* Rankings */
+    .overlay-rankings {
+      width: 100%;
+      max-width: 600px;
+      margin-top: 24px;
+    }
+
+    .ov-rank-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 16px;
+      margin-bottom: 6px;
+      background: var(--bg-dark);
+      border-radius: 12px;
+      opacity: 0;
+      transform: translateX(40px);
+      transition: all 0.4s ease;
+    }
+
+    .ov-rank-item.visible {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .ov-rank-item.winner {
+      background: rgba(46, 204, 113, 0.2);
+      border: 1px solid var(--green);
+      box-shadow: 0 0 20px rgba(46, 204, 113, 0.3);
+    }
+
+    .ov-rank-medal { font-size: 1.6rem; min-width: 36px; text-align: center; }
+    .ov-rank-name { flex: 1; font-weight: 700; font-size: 1.1rem; }
+    .ov-rank-guess { font-weight: 700; direction: ltr; }
+    .ov-rank-diff { font-weight: 700; font-size: 0.9rem; direction: ltr; }
+    .ov-rank-diff.under { color: var(--green); }
+    .ov-rank-diff.over { color: var(--red); }
+
+    /* Scoreboard sidebar */
+    .overlay-sidebar {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      width: 220px;
+      background: var(--bg-dark);
+      border-radius: 16px;
+      padding: 16px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .sidebar-title {
+      font-weight: 800;
+      font-size: 0.9rem;
+      color: var(--gold);
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    .sidebar-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      font-size: 0.9rem;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .sidebar-item:last-child { border-bottom: none; }
+    .sidebar-score { color: var(--gold); font-weight: 700; }
+
+    /* Screens */
+    .ov-screen { display: none; }
+    .ov-screen.active { display: flex; flex-direction: column; align-items: center; }
+
+    /* Timer ring */
+    .timer-ring-container {
+      position: relative;
+      width: 100px;
+      height: 100px;
+    }
+
+    .timer-ring {
+      width: 100px;
+      height: 100px;
+      transform: rotate(-90deg);
+    }
+
+    .timer-ring circle {
+      fill: none;
+      stroke-width: 6;
+    }
+
+    .timer-ring .bg { stroke: rgba(255,255,255,0.1); }
+
+    .timer-ring .progress {
+      stroke: var(--gold);
+      stroke-linecap: round;
+      transition: stroke-dashoffset 1s linear, stroke 0.3s;
+    }
+
+    .timer-ring-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 2.2rem;
+      font-weight: 900;
+    }
+
+    /* Waiting state */
+    .ov-waiting {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--gold);
+      text-align: center;
+      animation: mystery-pulse 2s infinite;
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay-container">
+
+    <!-- Waiting -->
+    <div id="ov-screen-waiting" class="ov-screen active" style="justify-content:center; height:100%;">
+      <div class="ov-waiting">خمّن السعر 💰<br><span style="font-size:1rem; color:rgba(255,255,255,0.5);">بانتظار بدء اللعبة...</span></div>
+    </div>
+
+    <!-- Active round -->
+    <div id="ov-screen-active" class="ov-screen">
+      <div class="overlay-header">
+        <div class="overlay-round">الجولة <span id="ov-round">1</span>/<span id="ov-total">10</span></div>
+        <div class="timer-ring-container">
+          <svg class="timer-ring" viewBox="0 0 100 100">
+            <circle class="bg" cx="50" cy="50" r="44" />
+            <circle class="progress" id="ov-timer-progress" cx="50" cy="50" r="44"
+              stroke-dasharray="276.46" stroke-dashoffset="0" />
+          </svg>
+          <div class="timer-ring-text overlay-timer" id="ov-timer">20</div>
+        </div>
+        <div class="overlay-guesses">التخمينات: <span id="ov-guess-count">0</span>/<span id="ov-guess-total">0</span></div>
+      </div>
+
+      <div class="overlay-main">
+        <div class="overlay-product" id="ov-product"></div>
+        <div class="overlay-currency" id="ov-currency-active"></div>
+        <div class="overlay-price-hidden" id="ov-price-hidden">❓❓❓❓</div>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div id="ov-screen-results" class="ov-screen">
+      <div class="overlay-header" style="justify-content:center;">
+        <div class="overlay-round">الجولة <span id="ov-result-round">1</span>/<span id="ov-result-total">10</span> — النتيجة</div>
+      </div>
+
+      <div class="overlay-main" style="justify-content:flex-start; padding-top:20px;">
+        <div class="overlay-product" id="ov-result-product" style="font-size:2rem;"></div>
+        <div style="color:rgba(255,255,255,0.6); margin-bottom:8px;">السعر الحقيقي</div>
+        <div class="overlay-price-area" id="ov-price-reveal"></div>
+        <div class="overlay-rankings" id="ov-rankings"></div>
+      </div>
+    </div>
+
+    <!-- Game over -->
+    <div id="ov-screen-gameover" class="ov-screen" style="justify-content:center; height:100%;">
+      <div style="text-align:center;">
+        <div style="font-size:3rem; margin-bottom:16px;">🏆</div>
+        <div style="font-size:2.5rem; font-weight:900; color:var(--gold); margin-bottom:24px;">انتهت اللعبة!</div>
+        <div id="ov-final-podium" style="display:flex; justify-content:center; align-items:flex-end; gap:16px;"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Scoreboard sidebar -->
+  <div class="overlay-sidebar" id="ov-sidebar" style="display:none;">
+    <div class="sidebar-title">لوحة النقاط</div>
+    <div id="ov-sidebar-scores"></div>
+  </div>
+
+  <!-- Particles -->
+  <div class="particle-container" id="particles"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    const ovScreens = {
+      waiting: document.getElementById('ov-screen-waiting'),
+      active: document.getElementById('ov-screen-active'),
+      results: document.getElementById('ov-screen-results'),
+      gameover: document.getElementById('ov-screen-gameover')
+    };
+
+    let totalDuration = 20;
+    const circumference = 2 * Math.PI * 44;
+
+    function showOvScreen(name) {
+      Object.values(ovScreens).forEach(s => s.classList.remove('active'));
+      ovScreens[name].classList.add('active');
+    }
+
+    function formatNumber(num) {
+      return Number(num).toLocaleString('en-US');
+    }
+
+    // Audio
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx;
+    function getAudioCtx() {
+      if (!audioCtx) audioCtx = new AudioCtx();
+      return audioCtx;
+    }
+
+    function playTickSound() {
+      try {
+        const ctx = getAudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = 1200;
+        gain.gain.value = 0.05;
+        osc.start();
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+        osc.stop(ctx.currentTime + 0.05);
+      } catch(e) {}
+    }
+
+    function playRevealSound(index, total) {
+      try {
+        const ctx = getAudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        const freq = 400 + (index / total) * 800;
+        osc.frequency.value = freq;
+        gain.gain.value = 0.08;
+        osc.start();
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+        osc.stop(ctx.currentTime + 0.15);
+      } catch(e) {}
+    }
+
+    function playWinSound() {
+      try {
+        const ctx = getAudioCtx();
+        [523, 659, 784, 1047].forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.frequency.value = freq;
+          gain.gain.value = 0.06;
+          osc.start(ctx.currentTime + i * 0.1);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.1 + 0.25);
+          osc.stop(ctx.currentTime + i * 0.1 + 0.25);
+        });
+      } catch(e) {}
+    }
+
+    // Particles
+    function spawnParticles(count) {
+      const container = document.getElementById('particles');
+      const colors = ['#f1c40f', '#2ecc71', '#e74c3c', '#3498db', '#9b59b6', '#e67e22'];
+      for (let i = 0; i < count; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        const size = 4 + Math.random() * 8;
+        const x = Math.random() * 100;
+        const dur = 2 + Math.random() * 3;
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        p.style.cssText = `
+          width: ${size}px; height: ${size}px;
+          left: ${x}%; top: -10px;
+          background: ${color};
+          animation: particle-fall ${dur}s ease-in forwards;
+          animation-delay: ${Math.random() * 0.5}s;
+        `;
+        container.appendChild(p);
+        setTimeout(() => p.remove(), (dur + 0.5) * 1000);
+      }
+    }
+
+    // Events
+    socket.on('round-started', ({ roundNumber, totalRounds, productName, currency, duration }) => {
+      totalDuration = duration;
+      document.getElementById('ov-round').textContent = roundNumber;
+      document.getElementById('ov-total').textContent = totalRounds;
+      document.getElementById('ov-product').textContent = productName;
+      document.getElementById('ov-currency-active').textContent = currency;
+      document.getElementById('ov-timer').textContent = duration;
+      document.getElementById('ov-guess-count').textContent = '0';
+      document.getElementById('ov-guess-total').textContent = '0';
+      document.getElementById('ov-price-hidden').style.display = '';
+
+      const progress = document.getElementById('ov-timer-progress');
+      progress.style.strokeDashoffset = '0';
+      progress.style.stroke = 'var(--gold)';
+
+      document.getElementById('ov-timer').className = 'timer-ring-text overlay-timer';
+
+      showOvScreen('active');
+      document.getElementById('ov-sidebar').style.display = '';
+    });
+
+    socket.on('timer-tick', ({ remaining }) => {
+      document.getElementById('ov-timer').textContent = remaining;
+      const ratio = 1 - (remaining / totalDuration);
+      const offset = circumference * ratio;
+      const progress = document.getElementById('ov-timer-progress');
+      progress.style.strokeDashoffset = offset;
+
+      const timerEl = document.getElementById('ov-timer');
+      if (remaining <= 3) {
+        progress.style.stroke = 'var(--red)';
+        timerEl.className = 'timer-ring-text overlay-timer danger';
+        playTickSound();
+      } else if (remaining <= 5) {
+        progress.style.stroke = 'var(--gold)';
+        timerEl.className = 'timer-ring-text overlay-timer warning';
+      }
+    });
+
+    socket.on('guess-count-updated', ({ guessed, total }) => {
+      document.getElementById('ov-guess-count').textContent = guessed;
+      document.getElementById('ov-guess-total').textContent = total;
+    });
+
+    socket.on('round-result', (data) => {
+      document.getElementById('ov-result-round').textContent = data.roundNumber;
+      document.getElementById('ov-result-total').textContent = data.totalRounds;
+      document.getElementById('ov-result-product').textContent = data.productName;
+
+      // Price reveal
+      const priceStr = formatNumber(data.actualPrice);
+      const container = document.getElementById('ov-price-reveal');
+      container.innerHTML = '';
+
+      const chars = priceStr.split('');
+      const digitEls = [];
+
+      chars.forEach((ch) => {
+        const span = document.createElement('span');
+        if (ch === ',') {
+          span.className = 'ov-digit comma';
+          span.textContent = ',';
+        } else {
+          span.className = 'ov-digit';
+          span.textContent = ch;
+        }
+        container.appendChild(span);
+        digitEls.push(span);
+      });
+
+      // Currency symbol at end
+      const currEl = document.createElement('span');
+      currEl.className = 'ov-currency-symbol';
+      currEl.textContent = data.currency;
+      container.appendChild(currEl);
+
+      // Reveal from right to left
+      const reversed = [...digitEls].reverse();
+      const nonCommaDigits = reversed.filter(d => !d.classList.contains('comma'));
+
+      reversed.forEach((digit, i) => {
+        setTimeout(() => {
+          digit.classList.add('revealed');
+          if (!digit.classList.contains('comma')) {
+            const idx = nonCommaDigits.indexOf(digit);
+            playRevealSound(idx, nonCommaDigits.length);
+          }
+        }, 400 + i * 300);
+      });
+
+      // Currency symbol
+      setTimeout(() => {
+        currEl.classList.add('revealed');
+      }, 400 + reversed.length * 300 + 200);
+
+      // Rankings (top 5)
+      const rankingsDelay = 400 + reversed.length * 300 + 800;
+      setTimeout(() => {
+        renderOvRankings(data);
+        spawnParticles(40);
+        playWinSound();
+      }, rankingsDelay);
+
+      // Update sidebar
+      updateSidebar(data.scores);
+
+      showOvScreen('results');
+    });
+
+    function renderOvRankings(data) {
+      const container = document.getElementById('ov-rankings');
+      container.innerHTML = '';
+      const medals = ['🥇', '🥈', '🥉'];
+      const top5 = data.rankings.slice(0, 5);
+
+      top5.forEach((r, i) => {
+        const item = document.createElement('div');
+        item.className = `ov-rank-item ${i === 0 ? 'winner' : ''}`;
+        const medal = i < 3 ? medals[i] : `${i + 1}.`;
+        const diffArrow = r.isOver ? '↑' : '↓';
+        const diffClass = r.isOver ? 'over' : 'under';
+
+        item.innerHTML = `
+          <span class="ov-rank-medal">${medal}</span>
+          <span class="ov-rank-name">${r.name}</span>
+          <span class="ov-rank-guess">${formatNumber(r.guess)} ${data.currency}</span>
+          <span class="ov-rank-diff ${diffClass}">${formatNumber(r.difference)}${diffArrow}</span>
+        `;
+
+        container.appendChild(item);
+
+        setTimeout(() => {
+          item.classList.add('visible');
+        }, i * 200);
+      });
+    }
+
+    function updateSidebar(scores) {
+      const container = document.getElementById('ov-sidebar-scores');
+      const top10 = scores.slice(0, 10);
+      container.innerHTML = top10.map((s, i) => {
+        const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
+        return `<div class="sidebar-item">
+          <span>${medal} ${s.name}</span>
+          <span class="sidebar-score">${s.score}</span>
+        </div>`;
+      }).join('');
+    }
+
+    socket.on('player-joined', ({ players }) => {
+      if (players) {
+        updateSidebar(players.map(p => ({ name: p.name, score: p.score })));
+      }
+    });
+
+    socket.on('game-over', ({ finalScores }) => {
+      const podium = document.getElementById('ov-final-podium');
+      const medals = ['🥇', '🥈', '🥉'];
+      const order = [1, 0, 2];
+
+      podium.innerHTML = '';
+      order.forEach(idx => {
+        if (finalScores[idx]) {
+          const s = finalScores[idx];
+          const heights = ['220px', '160px', '120px'];
+          const div = document.createElement('div');
+          div.style.cssText = `text-align:center; padding:16px 24px; background:var(--bg-dark); border-radius:16px 16px 0 0; min-height:${heights[idx]};`;
+          div.innerHTML = `
+            <div style="font-size:3rem; margin-bottom:8px;">${medals[idx]}</div>
+            <div style="font-size:1.4rem; font-weight:800;">${s.name}</div>
+            <div style="font-size:1.2rem; color:var(--gold); font-weight:700;">${s.score} نقاط</div>
+          `;
+          podium.appendChild(div);
+        }
+      });
+
+      spawnParticles(80);
+      playWinSound();
+      showOvScreen('gameover');
+    });
+
+    socket.on('game-reset', () => {
+      document.getElementById('ov-sidebar').style.display = 'none';
+      showOvScreen('waiting');
+    });
+
+    // Auto-watch room from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomCode = urlParams.get('room');
+    if (roomCode) {
+      socket.emit('watch-room', { roomCode });
+    }
+
+    socket.on('watch-success', ({ state, players, currentRound }) => {
+      if (players) {
+        updateSidebar(players.map(p => ({ name: p.name, score: p.score })));
+        document.getElementById('ov-sidebar').style.display = '';
+      }
+      if (state === 'active' && currentRound) {
+        document.getElementById('ov-round').textContent = currentRound.number;
+        document.getElementById('ov-total').textContent = currentRound.totalRounds;
+        document.getElementById('ov-product').textContent = currentRound.productName;
+        document.getElementById('ov-currency-active').textContent = currentRound.currency;
+        showOvScreen('active');
+      }
+    });
+  </script>
+</body>
+</html>
