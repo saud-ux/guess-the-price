@@ -11,6 +11,8 @@ const screens = {
 
 let playerName = '';
 let roomCode = '';
+let totalDuration = 20;
+const pCircumference = 2 * Math.PI * 28;
 
 function showScreen(name) {
   Object.values(screens).forEach(s => s.classList.remove('active'));
@@ -28,7 +30,7 @@ function formatNumber(num) {
   return Number(num).toLocaleString('en-US');
 }
 
-// Audio
+// ─── Audio ───
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
 let audioCtx;
 function getAudioCtx() {
@@ -44,7 +46,7 @@ function playSubmit() {
     osc.connect(gain);
     gain.connect(ctx.destination);
     osc.frequency.value = 660;
-    gain.gain.value = 0.08;
+    gain.gain.value = 0.07;
     osc.start();
     osc.frequency.linearRampToValueAtTime(880, ctx.currentTime + 0.1);
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
@@ -62,7 +64,7 @@ function playResult(isWin) {
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.frequency.value = freq;
-        gain.gain.value = 0.06;
+        gain.gain.value = 0.05;
         osc.start(ctx.currentTime + i * 0.1);
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.1 + 0.2);
         osc.stop(ctx.currentTime + i * 0.1 + 0.2);
@@ -73,7 +75,7 @@ function playResult(isWin) {
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.frequency.value = 300;
-      gain.gain.value = 0.05;
+      gain.gain.value = 0.04;
       osc.start();
       osc.frequency.linearRampToValueAtTime(200, ctx.currentTime + 0.2);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
@@ -89,10 +91,13 @@ if (roomFromUrl) {
   document.getElementById('room-code-input').value = roomFromUrl;
 }
 
-// Join
+// ─── Join ───
 document.getElementById('btn-join').addEventListener('click', joinRoom);
 document.getElementById('player-name-input').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') joinRoom();
+});
+document.getElementById('room-code-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('player-name-input').focus();
 });
 
 function joinRoom() {
@@ -108,8 +113,9 @@ function joinRoom() {
     return;
   }
 
-  document.getElementById('btn-join').disabled = true;
-  document.getElementById('btn-join').textContent = 'جاري الانضمام...';
+  const btn = document.getElementById('btn-join');
+  btn.disabled = true;
+  btn.textContent = 'جاري الانضمام...';
   socket.emit('join-room', { roomCode, playerName });
 }
 
@@ -121,8 +127,9 @@ function showError(msg) {
 
 socket.on('join-error', ({ message }) => {
   showError(message);
-  document.getElementById('btn-join').disabled = false;
-  document.getElementById('btn-join').textContent = 'انضم';
+  const btn = document.getElementById('btn-join');
+  btn.disabled = false;
+  btn.textContent = 'انضم للعبة';
 });
 
 socket.on('join-success', ({ state, currentRound }) => {
@@ -132,55 +139,54 @@ socket.on('join-success', ({ state, currentRound }) => {
     document.getElementById('p-product-name').textContent = currentRound.productName;
     document.getElementById('p-currency').textContent = currentRound.currency;
     showScreen('guess');
-    document.getElementById('guess-input').focus();
+    setTimeout(() => document.getElementById('guess-input').focus(), 100);
   } else {
     showScreen('waiting');
   }
 });
 
-// Round started
+// ─── Round started ───
 socket.on('round-started', ({ roundNumber, totalRounds, productName, currency, duration }) => {
+  totalDuration = duration;
   document.getElementById('p-round-num').textContent = roundNumber;
   document.getElementById('p-total-rounds').textContent = totalRounds;
   document.getElementById('p-product-name').textContent = productName;
   document.getElementById('p-currency').textContent = currency;
   document.getElementById('p-timer-value').textContent = duration;
+  document.getElementById('p-timer-value').className = 'p-timer-num';
   document.getElementById('guess-input').value = '';
   document.getElementById('btn-submit-guess').disabled = false;
 
-  const circle = document.getElementById('p-timer-circle');
-  circle.className = 'timer-circle';
-  circle.style.width = '60px';
-  circle.style.height = '60px';
-  circle.style.fontSize = '1.5rem';
-  circle.style.borderWidth = '4px';
+  const prog = document.getElementById('p-timer-progress');
+  prog.style.strokeDashoffset = '0';
+  prog.style.stroke = 'var(--gold)';
 
   showScreen('guess');
   setTimeout(() => document.getElementById('guess-input').focus(), 100);
 });
 
-// Timer
+// ─── Timer ───
 socket.on('timer-tick', ({ remaining }) => {
   const el = document.getElementById('p-timer-value');
   if (el) el.textContent = remaining;
 
-  const circle = document.getElementById('p-timer-circle');
+  const ratio = 1 - (remaining / totalDuration);
+  const offset = pCircumference * ratio;
+  const prog = document.getElementById('p-timer-progress');
+  if (prog) {
+    prog.style.strokeDashoffset = offset;
+  }
+
   if (remaining <= 3) {
-    circle.className = 'timer-circle danger';
-    circle.style.width = '60px';
-    circle.style.height = '60px';
-    circle.style.fontSize = '1.5rem';
-    circle.style.borderWidth = '4px';
+    el.className = 'p-timer-num danger';
+    if (prog) prog.style.stroke = 'var(--red)';
   } else if (remaining <= 5) {
-    circle.className = 'timer-circle warning';
-    circle.style.width = '60px';
-    circle.style.height = '60px';
-    circle.style.fontSize = '1.5rem';
-    circle.style.borderWidth = '4px';
+    el.className = 'p-timer-num warning';
+    if (prog) prog.style.stroke = 'var(--gold)';
   }
 });
 
-// Submit guess
+// ─── Submit guess ───
 document.getElementById('btn-submit-guess').addEventListener('click', submitGuess);
 document.getElementById('guess-input').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') submitGuess();
@@ -207,43 +213,46 @@ socket.on('guess-error', ({ message }) => {
   document.getElementById('btn-submit-guess').disabled = false;
 });
 
-// Result
+// ─── Result ───
 socket.on('your-result', ({ yourGuess, rank, difference, isOver, points, totalScore, didGuess }) => {
   const content = document.getElementById('p-result-content');
   const medals = ['🥇', '🥈', '🥉'];
+  const rankLabels = ['الأقرب!', 'المركز الثاني!', 'المركز الثالث!'];
 
   if (!didGuess) {
     content.innerHTML = `
-      <div style="font-size:2rem; margin-bottom:8px;">⚠️</div>
-      <div style="font-size:1.1rem; font-weight:700;">لم تخمّن هذه الجولة</div>
-      <div style="margin-top:16px;">
-        <div style="color:var(--text-muted);">مجموع نقاطك</div>
-        <div style="font-size:1.4rem; font-weight:800; color:var(--gold);">${totalScore} نقاط</div>
-      </div>
+      <div style="font-size:3rem; margin-bottom:8px;">⚠️</div>
+      <div class="p-result-title miss">لم تخمّن هذه الجولة</div>
+      <div class="p-result-total">مجموع نقاطك</div>
+      <div class="p-result-total-score">${totalScore} نقاط</div>
+      <div class="p-result-footer"><div class="mini-spinner"></div> بانتظار الجولة التالية...</div>
     `;
     playResult(false);
   } else {
-    const medal = rank <= 3 ? medals[rank - 1] : '';
     const isWin = rank <= 3;
+    const medal = isWin ? medals[rank - 1] : '';
     const diffArrow = isOver ? '↑' : '↓';
-    const diffColor = isOver ? 'var(--red)' : 'var(--green)';
+    const diffClass = isOver ? 'over' : 'under';
+    const title = isWin ? rankLabels[rank - 1] : `المركز ${rank}`;
+    const titleClass = isWin ? 'win' : 'miss';
 
     content.innerHTML = `
-      ${medal ? `<div class="player-result-medal">${medal}</div>` : ''}
-      ${isWin ? `<div style="font-size:1.2rem; font-weight:800; color:var(--green); margin-bottom:8px;">${rank === 1 ? 'الأقرب!' : rank === 2 ? 'المركز الثاني!' : 'المركز الثالث!'}</div>` : ''}
-      <div style="margin:12px 0;">
-        <div style="color:var(--text-muted); font-size:0.85rem;">تخمينك</div>
-        <div style="font-size:1.4rem; font-weight:800;">${formatNumber(yourGuess)}</div>
+      ${medal ? `<div class="p-result-medal">${medal}</div>` : ''}
+      <div class="p-result-title ${titleClass}">${title}</div>
+      <div class="p-result-stats">
+        <div class="p-result-stat">
+          <div class="p-result-stat-label">تخمينك</div>
+          <div class="p-result-stat-value">${formatNumber(yourGuess)}</div>
+        </div>
+        <div class="p-result-stat">
+          <div class="p-result-stat-label">الفرق</div>
+          <div class="p-result-stat-value ${diffClass}">${formatNumber(difference)} ${diffArrow}</div>
+        </div>
       </div>
-      <div style="margin:8px 0;">
-        <div style="color:var(--text-muted); font-size:0.85rem;">الفرق</div>
-        <div style="font-size:1.2rem; font-weight:700; color:${diffColor};">${formatNumber(difference)} ${diffArrow} ${isOver ? '❌' : ''}</div>
-      </div>
-      ${points > 0 ? `<div class="player-result-points">+${points} نقاط</div>` : ''}
-      <div style="margin-top:16px;">
-        <div style="color:var(--text-muted);">مجموع نقاطك</div>
-        <div style="font-size:1.4rem; font-weight:800; color:var(--gold);">${totalScore} نقاط</div>
-      </div>
+      ${points > 0 ? `<div class="p-result-points">+${points} نقاط</div>` : ''}
+      <div class="p-result-total">مجموع نقاطك</div>
+      <div class="p-result-total-score">${totalScore} نقاط</div>
+      <div class="p-result-footer"><div class="mini-spinner"></div> بانتظار الجولة التالية...</div>
     `;
     playResult(isWin);
   }
@@ -255,27 +264,32 @@ socket.on('next-round-ready', () => {
   showScreen('waiting');
 });
 
-// Game over
+// ─── Game over ───
 socket.on('game-over', ({ finalScores }) => {
-  const myResult = finalScores.findIndex(s => s.name === playerName);
+  const myIndex = finalScores.findIndex(s => s.name === playerName);
   const content = document.getElementById('p-final-result');
   const medals = ['🥇', '🥈', '🥉'];
+  const rankLabels = ['الأول', 'الثاني', 'الثالث'];
 
-  if (myResult >= 0 && myResult < 3) {
-    content.innerHTML = `
-      <div style="font-size:4rem; margin:16px 0;">${medals[myResult]}</div>
-      <div style="font-size:1.4rem; font-weight:800; margin-bottom:8px;">المركز ${myResult === 0 ? 'الأول' : myResult === 1 ? 'الثاني' : 'الثالث'}!</div>
-      <div style="font-size:1.6rem; font-weight:800; color:var(--gold);">${finalScores[myResult].score} نقاط</div>
+  let html = '<div class="p-gameover-title">انتهت اللعبة!</div>';
+
+  if (myIndex >= 0 && myIndex < 3) {
+    html += `
+      <div class="p-gameover-medal">${medals[myIndex]}</div>
+      <div class="p-gameover-rank">المركز ${rankLabels[myIndex]}!</div>
+      <div class="p-gameover-score">${finalScores[myIndex].score} نقاط</div>
     `;
-  } else if (myResult >= 0) {
-    content.innerHTML = `
-      <div style="font-size:1.2rem; margin:16px 0;">المركز ${myResult + 1}</div>
-      <div style="font-size:1.4rem; font-weight:800; color:var(--gold);">${finalScores[myResult].score} نقاط</div>
+  } else if (myIndex >= 0) {
+    html += `
+      <div style="font-size:3rem; margin-bottom:12px;">🎮</div>
+      <div class="p-gameover-rank">المركز ${myIndex + 1}</div>
+      <div class="p-gameover-score">${finalScores[myIndex].score} نقاط</div>
     `;
   } else {
-    content.innerHTML = '<div style="margin:16px 0;">شكراً على المشاركة!</div>';
+    html += '<div class="p-gameover-thanks">شكراً على المشاركة!</div>';
   }
 
+  content.innerHTML = html;
   showScreen('playerGameover');
 });
 
@@ -286,6 +300,7 @@ socket.on('game-reset', () => {
 socket.on('host-disconnected', () => {
   showToast('الهوست انقطع!');
   showScreen('join');
-  document.getElementById('btn-join').disabled = false;
-  document.getElementById('btn-join').textContent = 'انضم';
+  const btn = document.getElementById('btn-join');
+  btn.disabled = false;
+  btn.textContent = 'انضم للعبة';
 });

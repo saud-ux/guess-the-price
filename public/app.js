@@ -12,6 +12,8 @@ let currentScreen = 'lobby';
 let roomCode = '';
 let settings = { totalRounds: 10, roundDuration: 20, currency: '⃁' };
 let currentRound = 0;
+let totalDuration = 20;
+const hostCircumference = 2 * Math.PI * 48;
 
 function showScreen(name) {
   Object.values(screens).forEach(s => s.classList.remove('active'));
@@ -30,7 +32,7 @@ function formatNumber(num) {
   return Number(num).toLocaleString('en-US');
 }
 
-// Audio
+// ─── Audio ───
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
 let audioCtx;
 function getAudioCtx() {
@@ -46,7 +48,7 @@ function playTick() {
     osc.connect(gain);
     gain.connect(ctx.destination);
     osc.frequency.value = 800;
-    gain.gain.value = 0.08;
+    gain.gain.value = 0.06;
     osc.start();
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
     osc.stop(ctx.currentTime + 0.08);
@@ -62,7 +64,7 @@ function playReveal() {
     gain.connect(ctx.destination);
     osc.type = 'sine';
     osc.frequency.value = 523;
-    gain.gain.value = 0.12;
+    gain.gain.value = 0.1;
     osc.start();
     osc.frequency.linearRampToValueAtTime(1047, ctx.currentTime + 0.15);
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
@@ -79,7 +81,7 @@ function playWin() {
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.frequency.value = freq;
-      gain.gain.value = 0.08;
+      gain.gain.value = 0.06;
       osc.start(ctx.currentTime + i * 0.12);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.12 + 0.2);
       osc.stop(ctx.currentTime + i * 0.12 + 0.2);
@@ -95,14 +97,14 @@ function playCountdown() {
     osc.connect(gain);
     gain.connect(ctx.destination);
     osc.frequency.value = 440;
-    gain.gain.value = 0.06;
+    gain.gain.value = 0.05;
     osc.start();
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
     osc.stop(ctx.currentTime + 0.1);
   } catch(e) {}
 }
 
-// Create room
+// ─── Create room ───
 document.getElementById('btn-create-room').addEventListener('click', () => {
   socket.emit('create-room');
 });
@@ -116,13 +118,18 @@ socket.on('room-created', (data) => {
   showToast('تم إنشاء الغرفة');
 });
 
-// Copy link
+// ─── Copy links ───
 document.getElementById('btn-copy-link').addEventListener('click', () => {
   const url = `${window.location.origin}/play.html?room=${roomCode}`;
-  navigator.clipboard.writeText(url).then(() => showToast('تم نسخ الرابط'));
+  navigator.clipboard.writeText(url).then(() => showToast('تم نسخ رابط اللاعبين'));
 });
 
-// Settings
+document.getElementById('btn-copy-overlay').addEventListener('click', () => {
+  const url = `${window.location.origin}/overlay.html?room=${roomCode}`;
+  navigator.clipboard.writeText(url).then(() => showToast('تم نسخ رابط الأوفرلاي'));
+});
+
+// ─── Settings ───
 document.getElementById('setting-rounds').addEventListener('change', (e) => {
   settings.totalRounds = parseInt(e.target.value);
   socket.emit('update-settings', settings);
@@ -147,7 +154,7 @@ document.getElementById('custom-currency').addEventListener('input', (e) => {
   }
 });
 
-// Twitch
+// ─── Twitch ───
 document.getElementById('btn-twitch-connect').addEventListener('click', () => {
   const channel = document.getElementById('twitch-channel').value.trim();
   if (!channel) return;
@@ -171,10 +178,11 @@ socket.on('twitch-connected', ({ channel }) => {
 socket.on('twitch-disconnected', () => {
   document.getElementById('twitch-status').style.display = 'none';
   document.getElementById('twitch-dot').classList.remove('connected');
-  document.getElementById('btn-twitch-connect').textContent = 'اتصال';
-  document.getElementById('btn-twitch-connect').disabled = false;
-  document.getElementById('btn-twitch-connect').onclick = null;
-  document.getElementById('btn-twitch-connect').addEventListener('click', () => {
+  const btn = document.getElementById('btn-twitch-connect');
+  btn.textContent = 'اتصال';
+  btn.disabled = false;
+  btn.onclick = null;
+  btn.addEventListener('click', () => {
     const channel = document.getElementById('twitch-channel').value.trim();
     if (!channel) return;
     socket.emit('connect-twitch', { channel });
@@ -187,7 +195,7 @@ socket.on('twitch-error', ({ message }) => {
   document.getElementById('btn-twitch-connect').disabled = false;
 });
 
-// Players
+// ─── Players ───
 socket.on('player-joined', ({ name, type, playerCount, players }) => {
   updatePlayerList(players);
   document.getElementById('player-count').textContent = playerCount;
@@ -217,7 +225,7 @@ function updatePlayerList(players) {
   `).join('');
 }
 
-// Start game
+// ─── Start game ───
 document.getElementById('btn-start-game').addEventListener('click', () => {
   settings.totalRounds = parseInt(document.getElementById('setting-rounds').value);
   settings.roundDuration = parseInt(document.getElementById('setting-duration').value);
@@ -239,7 +247,7 @@ socket.on('game-started', () => {
   showScreen('setup');
 });
 
-// Start round
+// ─── Start round ───
 document.getElementById('btn-start-round').addEventListener('click', () => {
   const productName = document.getElementById('product-name').value.trim();
   const actualPrice = document.getElementById('actual-price').value.trim();
@@ -250,28 +258,39 @@ document.getElementById('btn-start-round').addEventListener('click', () => {
 
 socket.on('round-started', ({ roundNumber, totalRounds, productName, currency, duration }) => {
   currentRound = roundNumber;
+  totalDuration = duration;
   document.getElementById('active-round-num').textContent = roundNumber;
   document.getElementById('active-total-rounds').textContent = totalRounds;
   document.getElementById('active-product-name').textContent = productName;
   document.getElementById('active-currency').textContent = currency;
   document.getElementById('timer-value').textContent = duration;
+  document.getElementById('timer-value').className = 'host-timer-num';
   document.getElementById('guess-count').textContent = '0';
   document.getElementById('guess-total').textContent = '0';
 
-  const circle = document.getElementById('timer-circle');
-  circle.className = 'timer-circle';
+  const prog = document.getElementById('host-timer-progress');
+  prog.style.strokeDashoffset = '0';
+  prog.style.stroke = 'var(--gold)';
 
   showScreen('active');
 });
 
 socket.on('timer-tick', ({ remaining }) => {
   document.getElementById('timer-value').textContent = remaining;
-  const circle = document.getElementById('timer-circle');
+
+  const ratio = 1 - (remaining / totalDuration);
+  const offset = hostCircumference * ratio;
+  const prog = document.getElementById('host-timer-progress');
+  prog.style.strokeDashoffset = offset;
+
+  const timerEl = document.getElementById('timer-value');
   if (remaining <= 3) {
-    circle.className = 'timer-circle danger';
+    prog.style.stroke = 'var(--red)';
+    timerEl.className = 'host-timer-num danger';
     playCountdown();
   } else if (remaining <= 5) {
-    circle.className = 'timer-circle warning';
+    prog.style.stroke = 'var(--gold)';
+    timerEl.className = 'host-timer-num warning';
   }
 });
 
@@ -284,7 +303,7 @@ document.getElementById('btn-end-early').addEventListener('click', () => {
   socket.emit('end-round-early');
 });
 
-// Round result
+// ─── Round result ───
 socket.on('round-result', (data) => {
   document.getElementById('result-round-num').textContent = data.roundNumber;
   document.getElementById('result-total-rounds').textContent = data.totalRounds;
@@ -297,7 +316,7 @@ socket.on('round-result', (data) => {
 
   const chars = priceStr.split('');
   const digits = [];
-  chars.forEach((ch) => {
+  chars.forEach(ch => {
     const span = document.createElement('span');
     if (ch === ',') {
       span.className = 'price-digit comma';
@@ -311,7 +330,6 @@ socket.on('round-result', (data) => {
     digits.push(span);
   });
 
-  // Reveal from right to left
   const reversed = [...digits].reverse();
   reversed.forEach((digit, i) => {
     setTimeout(() => {
@@ -321,7 +339,6 @@ socket.on('round-result', (data) => {
     }, 300 + i * 250);
   });
 
-  // Currency after all digits
   setTimeout(() => {
     const currSpan = document.createElement('span');
     currSpan.className = 'price-digit revealed';
@@ -331,16 +348,13 @@ socket.on('round-result', (data) => {
     container.appendChild(currSpan);
   }, 300 + reversed.length * 250 + 200);
 
-  // Rankings
   setTimeout(() => {
     renderRankings(data);
     if (data.rankings.length > 0) playWin();
   }, 300 + reversed.length * 250 + 600);
 
-  // Scoreboard
   renderScoreboard(data.scores, 'scoreboard');
 
-  // Next button
   const btnNext = document.getElementById('btn-next-round');
   if (data.isLastRound) {
     btnNext.textContent = 'عرض النتيجة النهائية';
@@ -364,9 +378,9 @@ function renderRankings(data) {
 
   const medals = ['🥇', '🥈', '🥉'];
 
-  under.forEach((r, i) => {
+  under.forEach(r => {
     const globalIndex = data.rankings.indexOf(r);
-    list.appendChild(createResultItem(r, globalIndex, medals, data.currency, false));
+    list.appendChild(createResultItem(r, globalIndex, medals, data.currency));
   });
 
   if (over.length > 0) {
@@ -375,9 +389,9 @@ function renderRankings(data) {
     divider.textContent = 'تجاوزوا السعر';
     list.appendChild(divider);
 
-    over.forEach((r) => {
+    over.forEach(r => {
       const globalIndex = data.rankings.indexOf(r);
-      list.appendChild(createResultItem(r, globalIndex, medals, data.currency, true));
+      list.appendChild(createResultItem(r, globalIndex, medals, data.currency));
     });
   }
 
@@ -400,9 +414,10 @@ function renderRankings(data) {
   }
 }
 
-function createResultItem(r, globalIndex, medals, currency, isOverSection) {
+function createResultItem(r, globalIndex, medals, currency) {
   const item = document.createElement('div');
   item.className = `result-item ${globalIndex === 0 ? 'winner' : ''} ${r.isOver ? 'over' : ''}`;
+  item.style.animationDelay = `${globalIndex * 0.08}s`;
   const medal = globalIndex < 3 ? medals[globalIndex] : `${globalIndex + 1}.`;
   const diffDir = r.isOver ? '↑' : '↓';
   const diffClass = r.isOver ? 'over' : 'under';
@@ -437,13 +452,12 @@ socket.on('next-round-ready', ({ roundNumber, totalRounds }) => {
   showScreen('setup');
 });
 
-// Game over
+// ─── Game over ───
 function showGameOver(scores) {
   const podium = document.getElementById('final-podium');
   const medals = ['🥇', '🥈', '🥉'];
   const classes = ['first', 'second', 'third'];
 
-  // Display order: 2nd, 1st, 3rd
   const order = [1, 0, 2];
   podium.innerHTML = '';
 

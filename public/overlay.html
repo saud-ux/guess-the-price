@@ -7,12 +7,21 @@
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
   <style>
     :root {
-      --gold: #f1c40f;
-      --green: #2ecc71;
-      --red: #e74c3c;
-      --text: #eee;
-      --bg-card: rgba(15,52,96,0.85);
-      --bg-dark: rgba(26,26,46,0.9);
+      --gold: #fbbf24;
+      --gold-light: #fde68a;
+      --gold-dark: #d97706;
+      --green: #34d399;
+      --green-glow: rgba(52,211,153,0.4);
+      --red: #f87171;
+      --red-glow: rgba(248,113,113,0.4);
+      --blue: #60a5fa;
+      --purple: #a78bfa;
+      --text: #f1f5f9;
+      --text-dim: rgba(255,255,255,0.5);
+      --panel: rgba(10,10,30,0.82);
+      --panel-border: rgba(251,191,36,0.18);
+      --glass: rgba(17,17,45,0.6);
+      --glass-border: rgba(255,255,255,0.1);
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -26,58 +35,131 @@
       overflow: hidden;
       width: 100vw;
       height: 100vh;
+      -webkit-font-smoothing: antialiased;
     }
 
-    .overlay-container {
+    .overlay-root {
       width: 100%;
       height: 100%;
       display: flex;
       flex-direction: column;
-      padding: 20px;
+      padding: 24px;
+      position: relative;
     }
 
-    /* Header bar */
-    .overlay-header {
+    /* ─── Header ─── */
+    .ov-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: var(--bg-dark);
-      border-radius: 16px;
-      padding: 12px 20px;
-      margin-bottom: 16px;
-      border: 1px solid rgba(241,196,15,0.3);
+      background: var(--panel);
+      border-radius: 20px;
+      padding: 14px 24px;
+      margin-bottom: 20px;
+      border: 1px solid var(--panel-border);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+      position: relative;
+      overflow: hidden;
     }
 
-    .overlay-round {
+    .ov-header::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 10%;
+      right: 10%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      opacity: 0.4;
+    }
+
+    .ov-round-info {
       font-weight: 800;
-      font-size: 1.2rem;
+      font-size: 1.3rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
-    .overlay-timer {
-      font-size: 2rem;
+    .ov-round-num {
+      color: var(--gold);
+    }
+
+    .ov-guess-info {
+      font-size: 1rem;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .ov-guess-count-val {
+      color: var(--gold);
+      font-weight: 800;
+      font-size: 1.15rem;
+    }
+
+    /* ─── Timer Ring ─── */
+    .timer-container {
+      position: relative;
+      width: 110px;
+      height: 110px;
+    }
+
+    .timer-svg {
+      width: 110px;
+      height: 110px;
+      transform: rotate(-90deg);
+      filter: drop-shadow(0 0 8px rgba(251,191,36,0.2));
+    }
+
+    .timer-bg {
+      fill: none;
+      stroke: rgba(255,255,255,0.06);
+      stroke-width: 5;
+    }
+
+    .timer-progress {
+      fill: none;
+      stroke: var(--gold);
+      stroke-width: 5;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 1s linear, stroke 0.4s;
+      filter: drop-shadow(0 0 6px rgba(251,191,36,0.4));
+    }
+
+    .timer-glow {
+      fill: none;
+      stroke: var(--gold);
+      stroke-width: 10;
+      stroke-linecap: round;
+      opacity: 0.15;
+      transition: stroke-dashoffset 1s linear, stroke 0.4s;
+    }
+
+    .timer-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 2.6rem;
       font-weight: 900;
-      min-width: 60px;
-      text-align: center;
       transition: color 0.3s;
     }
 
-    .overlay-timer.warning { color: var(--gold); }
-    .overlay-timer.danger {
+    .timer-text.warning { color: var(--gold); }
+    .timer-text.danger {
       color: var(--red);
-      animation: pulse-text 0.5s infinite alternate;
+      animation: ov-pulse 0.5s infinite alternate;
     }
 
-    @keyframes pulse-text {
-      to { transform: scale(1.1); opacity: 0.8; }
+    @keyframes ov-pulse {
+      to { transform: translate(-50%, -50%) scale(1.1); opacity: 0.85; }
     }
 
-    .overlay-guesses {
-      font-size: 1rem;
-      color: rgba(255,255,255,0.7);
-    }
-
-    /* Main content */
-    .overlay-main {
+    /* ─── Main Content ─── */
+    .ov-main {
       flex: 1;
       display: flex;
       flex-direction: column;
@@ -85,311 +167,517 @@
       justify-content: center;
     }
 
-    .overlay-product {
-      font-size: 2.5rem;
+    .ov-product-name {
+      font-size: 3rem;
       font-weight: 900;
       text-align: center;
-      margin-bottom: 12px;
-      text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+      margin-bottom: 8px;
+      text-shadow: 0 4px 20px rgba(0,0,0,0.6);
+      background: linear-gradient(135deg, #fff, var(--gold-light));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
 
-    .overlay-currency {
+    .ov-currency-label {
       font-size: 1.2rem;
       color: var(--gold);
-      margin-bottom: 20px;
+      margin-bottom: 24px;
+      font-weight: 700;
+      opacity: 0.8;
     }
 
-    /* Price display */
-    .overlay-price-area {
+    .ov-mystery {
+      font-size: 4.5rem;
+      letter-spacing: 16px;
+      text-align: center;
+      animation: mystery-glow 2.5s ease-in-out infinite;
+      filter: drop-shadow(0 0 20px rgba(251,191,36,0.3));
+    }
+
+    @keyframes mystery-glow {
+      0%, 100% { opacity: 1; filter: drop-shadow(0 0 20px rgba(251,191,36,0.3)); }
+      50% { opacity: 0.6; filter: drop-shadow(0 0 40px rgba(251,191,36,0.6)); }
+    }
+
+    /* ─── Price Reveal ─── */
+    .ov-price-row {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 4px;
-      margin: 20px 0;
+      gap: 6px;
+      margin: 28px 0;
       direction: ltr;
     }
 
-    .overlay-price-hidden {
-      font-size: 4rem;
-      letter-spacing: 12px;
-      text-align: center;
-      animation: mystery-pulse 2s infinite;
-    }
-
-    @keyframes mystery-pulse {
-      0%, 100% { opacity: 1; text-shadow: 0 0 20px rgba(241,196,15,0.5); }
-      50% { opacity: 0.7; text-shadow: 0 0 40px rgba(241,196,15,0.8); }
-    }
-
-    /* Price reveal digits */
-    .ov-digit {
+    .ov-digit-card {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      background: var(--bg-card);
-      border: 2px solid rgba(241,196,15,0.3);
-      border-radius: 12px;
-      font-size: 3.5rem;
+      width: 72px;
+      height: 92px;
+      background: linear-gradient(145deg, var(--panel), rgba(20,20,50,0.9));
+      border: 2px solid rgba(251,191,36,0.2);
+      border-radius: 14px;
+      font-size: 3.8rem;
       font-weight: 900;
-      min-width: 64px;
-      height: 80px;
       color: var(--gold);
       opacity: 0;
       transform: scale(0.3) rotateY(180deg);
-      transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
       position: relative;
       overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     }
 
-    .ov-digit.revealed {
+    .ov-digit-card.revealed {
       opacity: 1;
       transform: scale(1) rotateY(0deg);
-      box-shadow: 0 0 30px rgba(241,196,15,0.4);
+      border-color: rgba(251,191,36,0.5);
+      box-shadow: 0 0 30px rgba(251,191,36,0.25), 0 8px 32px rgba(0,0,0,0.3);
     }
 
-    .ov-digit.revealed::after {
+    .ov-digit-card.revealed::before {
       content: '';
       position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.1) 50%, transparent 60%);
-      animation: shine 0.6s ease-out;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+      animation: digit-shine 0.8s ease-out forwards;
     }
 
-    @keyframes shine {
-      from { transform: translateX(-100%); }
-      to { transform: translateX(100%); }
+    @keyframes digit-shine {
+      to { left: 100%; }
     }
 
-    .ov-digit.comma {
+    .ov-digit-card.comma-card {
       background: transparent;
       border: none;
-      min-width: 24px;
-      font-size: 3rem;
+      width: 28px;
+      font-size: 3.2rem;
       box-shadow: none;
     }
 
-    .ov-digit.comma::after { display: none; }
+    .ov-digit-card.comma-card::before { display: none; }
 
-    .ov-currency-symbol {
+    .ov-currency-tag {
       font-size: 2rem;
       color: var(--gold);
+      font-weight: 800;
       opacity: 0;
-      transform: translateX(-20px);
-      transition: all 0.5s ease;
-      margin-right: 8px;
+      transform: translateX(-20px) scale(0.8);
+      transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+      margin-right: 10px;
     }
 
-    .ov-currency-symbol.revealed {
+    .ov-currency-tag.revealed {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+    }
+
+    /* ─── Rankings ─── */
+    .ov-rankings-area {
+      width: 100%;
+      max-width: 640px;
+      margin-top: 20px;
+    }
+
+    .ov-rank-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 20px;
+      margin-bottom: 8px;
+      background: var(--panel);
+      border-radius: 14px;
+      border: 1px solid var(--glass-border);
+      opacity: 0;
+      transform: translateX(50px);
+      transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+      backdrop-filter: blur(8px);
+    }
+
+    .ov-rank-row.visible {
       opacity: 1;
       transform: translateX(0);
     }
 
-    /* Particles */
-    .particle-container {
+    .ov-rank-row.first-place {
+      background: linear-gradient(135deg, rgba(52,211,153,0.15), rgba(52,211,153,0.05));
+      border-color: rgba(52,211,153,0.4);
+      box-shadow: 0 0 28px rgba(52,211,153,0.15), inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+
+    .ov-rank-medal { font-size: 1.8rem; min-width: 40px; text-align: center; }
+    .ov-rank-name { flex: 1; font-weight: 800; font-size: 1.15rem; }
+
+    .ov-rank-type {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-weight: 700;
+      opacity: 0.7;
+    }
+
+    .ov-rank-type.twitch {
+      background: rgba(167,139,250,0.15);
+      color: var(--purple);
+    }
+
+    .ov-rank-type.web {
+      background: rgba(96,165,250,0.15);
+      color: var(--blue);
+    }
+
+    .ov-rank-val { font-weight: 800; direction: ltr; font-size: 1.05rem; }
+
+    .ov-rank-diff {
+      font-weight: 700;
+      font-size: 0.88rem;
+      direction: ltr;
+      padding: 3px 10px;
+      border-radius: 8px;
+    }
+
+    .ov-rank-diff.under {
+      color: var(--green);
+      background: rgba(52,211,153,0.1);
+    }
+
+    .ov-rank-diff.over {
+      color: var(--red);
+      background: rgba(248,113,113,0.1);
+    }
+
+    .ov-rank-pts {
+      font-weight: 900;
+      color: var(--gold);
+      font-size: 0.95rem;
+      min-width: 50px;
+      text-align: center;
+    }
+
+    /* ─── Scoreboard Sidebar ─── */
+    .ov-sidebar {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      top: 24px;
+      left: 24px;
+      width: 240px;
+      background: var(--panel);
+      border-radius: 18px;
+      padding: 18px;
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      transition: opacity 0.4s;
+    }
+
+    .ov-sidebar-title {
+      font-weight: 800;
+      font-size: 0.9rem;
+      color: var(--gold);
+      margin-bottom: 12px;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(251,191,36,0.15);
+    }
+
+    .ov-sidebar-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 4px;
+      font-size: 0.92rem;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      transition: background 0.3s;
+    }
+
+    .ov-sidebar-row:last-child { border-bottom: none; }
+
+    .ov-sidebar-row .rank-prefix {
+      min-width: 28px;
+      text-align: center;
+    }
+
+    .ov-sidebar-row .player-name {
+      flex: 1;
+      font-weight: 600;
+      margin: 0 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .ov-sidebar-row .score-val {
+      color: var(--gold);
+      font-weight: 800;
+      font-size: 1rem;
+    }
+
+    /* ─── Screens ─── */
+    .ov-screen { display: none; }
+    .ov-screen.active {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      animation: ov-screen-in 0.5s ease;
+    }
+
+    @keyframes ov-screen-in {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    /* ─── Waiting ─── */
+    .ov-waiting-wrap {
+      text-align: center;
+      animation: mystery-glow 3s ease-in-out infinite;
+    }
+
+    .ov-waiting-logo {
+      font-size: 2.6rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light), var(--gold));
+      background-size: 200% 200%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: logo-shimmer 4s ease infinite;
+      margin-bottom: 12px;
+    }
+
+    @keyframes logo-shimmer {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    .ov-waiting-sub {
+      font-size: 1rem;
+      color: var(--text-dim);
+    }
+
+    /* ─── Gameover Podium ─── */
+    .ov-gameover-title {
+      font-size: 3rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 32px;
+    }
+
+    .ov-podium {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 16px;
+    }
+
+    .ov-podium-item {
+      text-align: center;
+      padding: 20px 28px;
+      background: var(--panel);
+      border-radius: 18px 18px 0 0;
+      border: 1px solid var(--glass-border);
+      border-bottom: none;
+      backdrop-filter: blur(8px);
+      position: relative;
+      overflow: hidden;
+      opacity: 0;
+      transform: translateY(40px);
+      animation: podium-up 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    .ov-podium-item::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(255,255,255,0.04), transparent);
+      pointer-events: none;
+    }
+
+    .ov-podium-item.p-first {
+      min-height: 240px;
+      min-width: 160px;
+      border-color: rgba(251,191,36,0.3);
+      animation-delay: 0.3s;
+    }
+
+    .ov-podium-item.p-second {
+      min-height: 180px;
+      min-width: 140px;
+      border-color: rgba(192,192,192,0.2);
+      animation-delay: 0.15s;
+    }
+
+    .ov-podium-item.p-third {
+      min-height: 140px;
+      min-width: 130px;
+      border-color: rgba(205,127,50,0.2);
+      animation-delay: 0.45s;
+    }
+
+    @keyframes podium-up {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .ov-podium-medal { font-size: 3.2rem; margin-bottom: 10px; }
+    .ov-podium-name { font-weight: 800; font-size: 1.3rem; margin-bottom: 6px; }
+    .ov-podium-score { color: var(--gold); font-weight: 700; font-size: 1.15rem; }
+
+    /* ─── Particles ─── */
+    .particle-layer {
+      position: fixed;
+      inset: 0;
       pointer-events: none;
       z-index: 100;
     }
 
-    .particle {
+    .spark {
       position: absolute;
-      border-radius: 50%;
       pointer-events: none;
+      border-radius: 50%;
     }
 
-    @keyframes particle-fall {
-      0% { transform: translateY(0) rotate(0deg); opacity: 1; }
-      100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+    @keyframes spark-fall {
+      0% {
+        transform: translateY(0) rotate(0deg) scale(1);
+        opacity: 1;
+      }
+      80% { opacity: 0.8; }
+      100% {
+        transform: translateY(100vh) rotate(720deg) scale(0.3);
+        opacity: 0;
+      }
     }
 
-    /* Rankings */
-    .overlay-rankings {
-      width: 100%;
-      max-width: 600px;
-      margin-top: 24px;
+    @keyframes spark-burst {
+      0% {
+        transform: translate(0, 0) scale(1);
+        opacity: 1;
+      }
+      100% {
+        opacity: 0;
+      }
     }
 
-    .ov-rank-item {
+    /* ─── Live badge ─── */
+    .ov-live-badge {
+      position: fixed;
+      top: 24px;
+      right: 24px;
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 10px 16px;
-      margin-bottom: 6px;
-      background: var(--bg-dark);
-      border-radius: 12px;
-      opacity: 0;
-      transform: translateX(40px);
-      transition: all 0.4s ease;
+      gap: 8px;
+      background: var(--panel);
+      border: 1px solid var(--glass-border);
+      padding: 8px 16px;
+      border-radius: 24px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      backdrop-filter: blur(12px);
     }
 
-    .ov-rank-item.visible {
-      opacity: 1;
-      transform: translateX(0);
+    .ov-live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--red);
+      animation: live-blink 1.5s infinite;
     }
 
-    .ov-rank-item.winner {
-      background: rgba(46, 204, 113, 0.2);
-      border: 1px solid var(--green);
-      box-shadow: 0 0 20px rgba(46, 204, 113, 0.3);
-    }
-
-    .ov-rank-medal { font-size: 1.6rem; min-width: 36px; text-align: center; }
-    .ov-rank-name { flex: 1; font-weight: 700; font-size: 1.1rem; }
-    .ov-rank-guess { font-weight: 700; direction: ltr; }
-    .ov-rank-diff { font-weight: 700; font-size: 0.9rem; direction: ltr; }
-    .ov-rank-diff.under { color: var(--green); }
-    .ov-rank-diff.over { color: var(--red); }
-
-    /* Scoreboard sidebar */
-    .overlay-sidebar {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      width: 220px;
-      background: var(--bg-dark);
-      border-radius: 16px;
-      padding: 16px;
-      border: 1px solid rgba(255,255,255,0.1);
-    }
-
-    .sidebar-title {
-      font-weight: 800;
-      font-size: 0.9rem;
-      color: var(--gold);
-      margin-bottom: 8px;
-      text-align: center;
-    }
-
-    .sidebar-item {
-      display: flex;
-      justify-content: space-between;
-      padding: 4px 0;
-      font-size: 0.9rem;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
-    }
-
-    .sidebar-item:last-child { border-bottom: none; }
-    .sidebar-score { color: var(--gold); font-weight: 700; }
-
-    /* Screens */
-    .ov-screen { display: none; }
-    .ov-screen.active { display: flex; flex-direction: column; align-items: center; }
-
-    /* Timer ring */
-    .timer-ring-container {
-      position: relative;
-      width: 100px;
-      height: 100px;
-    }
-
-    .timer-ring {
-      width: 100px;
-      height: 100px;
-      transform: rotate(-90deg);
-    }
-
-    .timer-ring circle {
-      fill: none;
-      stroke-width: 6;
-    }
-
-    .timer-ring .bg { stroke: rgba(255,255,255,0.1); }
-
-    .timer-ring .progress {
-      stroke: var(--gold);
-      stroke-linecap: round;
-      transition: stroke-dashoffset 1s linear, stroke 0.3s;
-    }
-
-    .timer-ring-text {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 2.2rem;
-      font-weight: 900;
-    }
-
-    /* Waiting state */
-    .ov-waiting {
-      font-size: 2rem;
-      font-weight: 800;
-      color: var(--gold);
-      text-align: center;
-      animation: mystery-pulse 2s infinite;
+    @keyframes live-blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
     }
   </style>
 </head>
 <body>
-  <div class="overlay-container">
+  <div class="overlay-root">
 
     <!-- Waiting -->
     <div id="ov-screen-waiting" class="ov-screen active" style="justify-content:center; height:100%;">
-      <div class="ov-waiting">خمّن السعر 💰<br><span style="font-size:1rem; color:rgba(255,255,255,0.5);">بانتظار بدء اللعبة...</span></div>
+      <div class="ov-waiting-wrap">
+        <div class="ov-waiting-logo">خمّن السعر</div>
+        <div class="ov-waiting-sub">بانتظار بدء اللعبة...</div>
+      </div>
     </div>
 
-    <!-- Active round -->
+    <!-- Active Round -->
     <div id="ov-screen-active" class="ov-screen">
-      <div class="overlay-header">
-        <div class="overlay-round">الجولة <span id="ov-round">1</span>/<span id="ov-total">10</span></div>
-        <div class="timer-ring-container">
-          <svg class="timer-ring" viewBox="0 0 100 100">
-            <circle class="bg" cx="50" cy="50" r="44" />
-            <circle class="progress" id="ov-timer-progress" cx="50" cy="50" r="44"
-              stroke-dasharray="276.46" stroke-dashoffset="0" />
-          </svg>
-          <div class="timer-ring-text overlay-timer" id="ov-timer">20</div>
+      <div class="ov-header">
+        <div class="ov-round-info">
+          الجولة <span class="ov-round-num" id="ov-round">1</span>/<span id="ov-total">10</span>
         </div>
-        <div class="overlay-guesses">التخمينات: <span id="ov-guess-count">0</span>/<span id="ov-guess-total">0</span></div>
+
+        <div class="timer-container">
+          <svg class="timer-svg" viewBox="0 0 110 110">
+            <circle class="timer-bg" cx="55" cy="55" r="48" />
+            <circle class="timer-glow" id="ov-timer-glow" cx="55" cy="55" r="48"
+              stroke-dasharray="301.59" stroke-dashoffset="0" />
+            <circle class="timer-progress" id="ov-timer-progress" cx="55" cy="55" r="48"
+              stroke-dasharray="301.59" stroke-dashoffset="0" />
+          </svg>
+          <div class="timer-text" id="ov-timer">20</div>
+        </div>
+
+        <div class="ov-guess-info">
+          التخمينات <span class="ov-guess-count-val" id="ov-guess-count">0</span>/<span id="ov-guess-total">0</span>
+        </div>
       </div>
 
-      <div class="overlay-main">
-        <div class="overlay-product" id="ov-product"></div>
-        <div class="overlay-currency" id="ov-currency-active"></div>
-        <div class="overlay-price-hidden" id="ov-price-hidden">❓❓❓❓</div>
+      <div class="ov-main">
+        <div class="ov-product-name" id="ov-product"></div>
+        <div class="ov-currency-label" id="ov-currency-label"></div>
+        <div class="ov-mystery" id="ov-mystery">❓❓❓❓</div>
       </div>
     </div>
 
     <!-- Results -->
     <div id="ov-screen-results" class="ov-screen">
-      <div class="overlay-header" style="justify-content:center;">
-        <div class="overlay-round">الجولة <span id="ov-result-round">1</span>/<span id="ov-result-total">10</span> — النتيجة</div>
+      <div class="ov-header" style="justify-content:center;">
+        <div class="ov-round-info">
+          الجولة <span class="ov-round-num" id="ov-res-round">1</span>/<span id="ov-res-total">10</span> — النتيجة
+        </div>
       </div>
 
-      <div class="overlay-main" style="justify-content:flex-start; padding-top:20px;">
-        <div class="overlay-product" id="ov-result-product" style="font-size:2rem;"></div>
-        <div style="color:rgba(255,255,255,0.6); margin-bottom:8px;">السعر الحقيقي</div>
-        <div class="overlay-price-area" id="ov-price-reveal"></div>
-        <div class="overlay-rankings" id="ov-rankings"></div>
+      <div class="ov-main" style="justify-content:flex-start; padding-top:16px;">
+        <div class="ov-product-name" id="ov-res-product" style="font-size:2.2rem;"></div>
+        <div style="color:var(--text-dim); margin-bottom:4px; font-size:1rem;">السعر الحقيقي</div>
+        <div class="ov-price-row" id="ov-price-reveal"></div>
+        <div class="ov-rankings-area" id="ov-rankings"></div>
       </div>
     </div>
 
-    <!-- Game over -->
+    <!-- Game Over -->
     <div id="ov-screen-gameover" class="ov-screen" style="justify-content:center; height:100%;">
       <div style="text-align:center;">
-        <div style="font-size:3rem; margin-bottom:16px;">🏆</div>
-        <div style="font-size:2.5rem; font-weight:900; color:var(--gold); margin-bottom:24px;">انتهت اللعبة!</div>
-        <div id="ov-final-podium" style="display:flex; justify-content:center; align-items:flex-end; gap:16px;"></div>
+        <div style="font-size:4rem; margin-bottom:12px;">🏆</div>
+        <div class="ov-gameover-title">انتهت اللعبة!</div>
+        <div class="ov-podium" id="ov-final-podium"></div>
       </div>
     </div>
-
   </div>
 
-  <!-- Scoreboard sidebar -->
-  <div class="overlay-sidebar" id="ov-sidebar" style="display:none;">
-    <div class="sidebar-title">لوحة النقاط</div>
+  <!-- Sidebar -->
+  <div class="ov-sidebar" id="ov-sidebar" style="display:none;">
+    <div class="ov-sidebar-title">لوحة النقاط</div>
     <div id="ov-sidebar-scores"></div>
   </div>
 
+  <!-- Live badge -->
+  <div class="ov-live-badge" id="ov-live-badge" style="display:none;">
+    <div class="ov-live-dot"></div>
+    <span>مباشر</span>
+  </div>
+
   <!-- Particles -->
-  <div class="particle-container" id="particles"></div>
+  <div class="particle-layer" id="particles"></div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
@@ -403,7 +691,7 @@
     };
 
     let totalDuration = 20;
-    const circumference = 2 * Math.PI * 44;
+    const circumference = 2 * Math.PI * 48;
 
     function showOvScreen(name) {
       Object.values(ovScreens).forEach(s => s.classList.remove('active'));
@@ -414,7 +702,7 @@
       return Number(num).toLocaleString('en-US');
     }
 
-    // Audio
+    // ─── Audio ───
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     let audioCtx;
     function getAudioCtx() {
@@ -430,10 +718,10 @@
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.frequency.value = 1200;
-        gain.gain.value = 0.05;
+        gain.gain.value = 0.04;
         osc.start();
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
-        osc.stop(ctx.currentTime + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06);
+        osc.stop(ctx.currentTime + 0.06);
       } catch(e) {}
     }
 
@@ -444,12 +732,13 @@
         const gain = ctx.createGain();
         osc.connect(gain);
         gain.connect(ctx.destination);
-        const freq = 400 + (index / total) * 800;
+        const freq = 350 + (index / Math.max(total, 1)) * 900;
         osc.frequency.value = freq;
-        gain.gain.value = 0.08;
+        osc.type = 'sine';
+        gain.gain.value = 0.07;
         osc.start();
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
-        osc.stop(ctx.currentTime + 0.15);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+        osc.stop(ctx.currentTime + 0.18);
       } catch(e) {}
     }
 
@@ -462,74 +751,128 @@
           osc.connect(gain);
           gain.connect(ctx.destination);
           osc.frequency.value = freq;
-          gain.gain.value = 0.06;
-          osc.start(ctx.currentTime + i * 0.1);
-          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.1 + 0.25);
-          osc.stop(ctx.currentTime + i * 0.1 + 0.25);
+          gain.gain.value = 0.05;
+          osc.start(ctx.currentTime + i * 0.12);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.12 + 0.3);
+          osc.stop(ctx.currentTime + i * 0.12 + 0.3);
         });
       } catch(e) {}
     }
 
-    // Particles
-    function spawnParticles(count) {
+    function playRankSound() {
+      try {
+        const ctx = getAudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = 600;
+        gain.gain.value = 0.03;
+        osc.start();
+        osc.frequency.linearRampToValueAtTime(800, ctx.currentTime + 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+        osc.stop(ctx.currentTime + 0.1);
+      } catch(e) {}
+    }
+
+    // ─── Particles ───
+    function spawnConfetti(count) {
       const container = document.getElementById('particles');
-      const colors = ['#f1c40f', '#2ecc71', '#e74c3c', '#3498db', '#9b59b6', '#e67e22'];
+      const colors = ['#fbbf24', '#34d399', '#f87171', '#60a5fa', '#a78bfa', '#f472b6', '#fde68a'];
       for (let i = 0; i < count; i++) {
         const p = document.createElement('div');
-        p.className = 'particle';
-        const size = 4 + Math.random() * 8;
+        p.className = 'spark';
+        const size = 4 + Math.random() * 10;
         const x = Math.random() * 100;
-        const dur = 2 + Math.random() * 3;
+        const dur = 2.5 + Math.random() * 3;
         const color = colors[Math.floor(Math.random() * colors.length)];
+        const shape = Math.random() > 0.5 ? '50%' : (Math.random() > 0.5 ? '2px' : '0');
         p.style.cssText = `
-          width: ${size}px; height: ${size}px;
-          left: ${x}%; top: -10px;
-          background: ${color};
-          animation: particle-fall ${dur}s ease-in forwards;
-          animation-delay: ${Math.random() * 0.5}s;
+          width:${size}px; height:${size * (Math.random() > 0.4 ? 1 : 0.5)}px;
+          left:${x}%; top:-10px;
+          background:${color};
+          border-radius:${shape};
+          animation:spark-fall ${dur}s ease-in forwards;
+          animation-delay:${Math.random() * 0.8}s;
         `;
         container.appendChild(p);
-        setTimeout(() => p.remove(), (dur + 0.5) * 1000);
+        setTimeout(() => p.remove(), (dur + 1) * 1000);
       }
     }
 
-    // Events
+    function spawnBurst(cx, cy, count) {
+      const container = document.getElementById('particles');
+      const colors = ['#fbbf24', '#fde68a', '#fff'];
+      for (let i = 0; i < count; i++) {
+        const p = document.createElement('div');
+        p.className = 'spark';
+        const size = 3 + Math.random() * 6;
+        const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
+        const dist = 60 + Math.random() * 120;
+        const tx = Math.cos(angle) * dist;
+        const ty = Math.sin(angle) * dist;
+        const dur = 0.6 + Math.random() * 0.6;
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        p.style.cssText = `
+          width:${size}px; height:${size}px;
+          left:${cx}px; top:${cy}px;
+          background:${color};
+          border-radius:50%;
+          animation:spark-burst ${dur}s ease-out forwards;
+        `;
+        p.animate([
+          { transform: 'translate(0,0) scale(1)', opacity: 1 },
+          { transform: `translate(${tx}px,${ty}px) scale(0.2)`, opacity: 0 }
+        ], { duration: dur * 1000, fill: 'forwards' });
+        container.appendChild(p);
+        setTimeout(() => p.remove(), dur * 1000 + 100);
+      }
+    }
+
+    // ─── Socket Events ───
     socket.on('round-started', ({ roundNumber, totalRounds, productName, currency, duration }) => {
       totalDuration = duration;
       document.getElementById('ov-round').textContent = roundNumber;
       document.getElementById('ov-total').textContent = totalRounds;
       document.getElementById('ov-product').textContent = productName;
-      document.getElementById('ov-currency-active').textContent = currency;
+      document.getElementById('ov-currency-label').textContent = currency;
       document.getElementById('ov-timer').textContent = duration;
+      document.getElementById('ov-timer').className = 'timer-text';
       document.getElementById('ov-guess-count').textContent = '0';
       document.getElementById('ov-guess-total').textContent = '0';
-      document.getElementById('ov-price-hidden').style.display = '';
+      document.getElementById('ov-mystery').style.display = '';
 
-      const progress = document.getElementById('ov-timer-progress');
-      progress.style.strokeDashoffset = '0';
-      progress.style.stroke = 'var(--gold)';
-
-      document.getElementById('ov-timer').className = 'timer-ring-text overlay-timer';
+      const prog = document.getElementById('ov-timer-progress');
+      const glow = document.getElementById('ov-timer-glow');
+      prog.style.strokeDashoffset = '0';
+      prog.style.stroke = 'var(--gold)';
+      glow.style.strokeDashoffset = '0';
+      glow.style.stroke = 'var(--gold)';
 
       showOvScreen('active');
       document.getElementById('ov-sidebar').style.display = '';
+      document.getElementById('ov-live-badge').style.display = 'flex';
     });
 
     socket.on('timer-tick', ({ remaining }) => {
       document.getElementById('ov-timer').textContent = remaining;
       const ratio = 1 - (remaining / totalDuration);
       const offset = circumference * ratio;
-      const progress = document.getElementById('ov-timer-progress');
-      progress.style.strokeDashoffset = offset;
+      const prog = document.getElementById('ov-timer-progress');
+      const glow = document.getElementById('ov-timer-glow');
+      prog.style.strokeDashoffset = offset;
+      glow.style.strokeDashoffset = offset;
 
       const timerEl = document.getElementById('ov-timer');
       if (remaining <= 3) {
-        progress.style.stroke = 'var(--red)';
-        timerEl.className = 'timer-ring-text overlay-timer danger';
+        prog.style.stroke = 'var(--red)';
+        glow.style.stroke = 'var(--red)';
+        timerEl.className = 'timer-text danger';
         playTickSound();
       } else if (remaining <= 5) {
-        progress.style.stroke = 'var(--gold)';
-        timerEl.className = 'timer-ring-text overlay-timer warning';
+        prog.style.stroke = 'var(--gold)';
+        glow.style.stroke = 'var(--gold)';
+        timerEl.className = 'timer-text warning';
       }
     });
 
@@ -539,9 +882,9 @@
     });
 
     socket.on('round-result', (data) => {
-      document.getElementById('ov-result-round').textContent = data.roundNumber;
-      document.getElementById('ov-result-total').textContent = data.totalRounds;
-      document.getElementById('ov-result-product').textContent = data.productName;
+      document.getElementById('ov-res-round').textContent = data.roundNumber;
+      document.getElementById('ov-res-total').textContent = data.totalRounds;
+      document.getElementById('ov-res-product').textContent = data.productName;
 
       // Price reveal
       const priceStr = formatNumber(data.actualPrice);
@@ -551,55 +894,54 @@
       const chars = priceStr.split('');
       const digitEls = [];
 
-      chars.forEach((ch) => {
+      chars.forEach(ch => {
         const span = document.createElement('span');
         if (ch === ',') {
-          span.className = 'ov-digit comma';
+          span.className = 'ov-digit-card comma-card';
           span.textContent = ',';
         } else {
-          span.className = 'ov-digit';
+          span.className = 'ov-digit-card';
           span.textContent = ch;
         }
         container.appendChild(span);
         digitEls.push(span);
       });
 
-      // Currency symbol at end
       const currEl = document.createElement('span');
-      currEl.className = 'ov-currency-symbol';
+      currEl.className = 'ov-currency-tag';
       currEl.textContent = data.currency;
       container.appendChild(currEl);
 
-      // Reveal from right to left
+      // Reveal right to left
       const reversed = [...digitEls].reverse();
-      const nonCommaDigits = reversed.filter(d => !d.classList.contains('comma'));
+      const nonComma = reversed.filter(d => !d.classList.contains('comma-card'));
 
       reversed.forEach((digit, i) => {
         setTimeout(() => {
           digit.classList.add('revealed');
-          if (!digit.classList.contains('comma')) {
-            const idx = nonCommaDigits.indexOf(digit);
-            playRevealSound(idx, nonCommaDigits.length);
+          if (!digit.classList.contains('comma-card')) {
+            const idx = nonComma.indexOf(digit);
+            playRevealSound(idx, nonComma.length);
+            const rect = digit.getBoundingClientRect();
+            spawnBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 8);
           }
-        }, 400 + i * 300);
+        }, 500 + i * 280);
       });
 
-      // Currency symbol
+      const totalRevealTime = 500 + reversed.length * 280;
+
       setTimeout(() => {
         currEl.classList.add('revealed');
-      }, 400 + reversed.length * 300 + 200);
+      }, totalRevealTime + 200);
 
-      // Rankings (top 5)
-      const rankingsDelay = 400 + reversed.length * 300 + 800;
+      // Rankings
       setTimeout(() => {
         renderOvRankings(data);
-        spawnParticles(40);
+        spawnConfetti(50);
         playWinSound();
-      }, rankingsDelay);
+      }, totalRevealTime + 700);
 
-      // Update sidebar
       updateSidebar(data.scores);
-
       showOvScreen('results');
     });
 
@@ -610,24 +952,29 @@
       const top5 = data.rankings.slice(0, 5);
 
       top5.forEach((r, i) => {
-        const item = document.createElement('div');
-        item.className = `ov-rank-item ${i === 0 ? 'winner' : ''}`;
+        const row = document.createElement('div');
+        row.className = `ov-rank-row ${i === 0 ? 'first-place' : ''}`;
         const medal = i < 3 ? medals[i] : `${i + 1}.`;
         const diffArrow = r.isOver ? '↑' : '↓';
         const diffClass = r.isOver ? 'over' : 'under';
+        const typeLabel = r.type === 'twitch' ? 'تويتش' : 'ويب';
+        const typeClass = r.type === 'twitch' ? 'twitch' : 'web';
 
-        item.innerHTML = `
+        row.innerHTML = `
           <span class="ov-rank-medal">${medal}</span>
           <span class="ov-rank-name">${r.name}</span>
-          <span class="ov-rank-guess">${formatNumber(r.guess)} ${data.currency}</span>
+          <span class="ov-rank-type ${typeClass}">${typeLabel}</span>
+          <span class="ov-rank-val">${formatNumber(r.guess)} ${data.currency}</span>
           <span class="ov-rank-diff ${diffClass}">${formatNumber(r.difference)}${diffArrow}</span>
+          <span class="ov-rank-pts">${r.points > 0 ? '+' + r.points : ''}</span>
         `;
 
-        container.appendChild(item);
+        container.appendChild(row);
 
         setTimeout(() => {
-          item.classList.add('visible');
-        }, i * 200);
+          row.classList.add('visible');
+          playRankSound();
+        }, i * 250);
       });
     }
 
@@ -636,9 +983,10 @@
       const top10 = scores.slice(0, 10);
       container.innerHTML = top10.map((s, i) => {
         const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
-        return `<div class="sidebar-item">
-          <span>${medal} ${s.name}</span>
-          <span class="sidebar-score">${s.score}</span>
+        return `<div class="ov-sidebar-row">
+          <span class="rank-prefix">${medal}</span>
+          <span class="player-name">${s.name}</span>
+          <span class="score-val">${s.score}</span>
         </div>`;
       }).join('');
     }
@@ -658,47 +1006,58 @@
       order.forEach(idx => {
         if (finalScores[idx]) {
           const s = finalScores[idx];
-          const heights = ['220px', '160px', '120px'];
           const div = document.createElement('div');
-          div.style.cssText = `text-align:center; padding:16px 24px; background:var(--bg-dark); border-radius:16px 16px 0 0; min-height:${heights[idx]};`;
+          const cls = idx === 0 ? 'p-first' : idx === 1 ? 'p-second' : 'p-third';
+          div.className = `ov-podium-item ${cls}`;
           div.innerHTML = `
-            <div style="font-size:3rem; margin-bottom:8px;">${medals[idx]}</div>
-            <div style="font-size:1.4rem; font-weight:800;">${s.name}</div>
-            <div style="font-size:1.2rem; color:var(--gold); font-weight:700;">${s.score} نقاط</div>
+            <div class="ov-podium-medal">${medals[idx]}</div>
+            <div class="ov-podium-name">${s.name}</div>
+            <div class="ov-podium-score">${s.score} نقاط</div>
           `;
           podium.appendChild(div);
         }
       });
 
-      spawnParticles(80);
+      spawnConfetti(100);
       playWinSound();
       showOvScreen('gameover');
+      document.getElementById('ov-live-badge').style.display = 'none';
     });
 
     socket.on('game-reset', () => {
       document.getElementById('ov-sidebar').style.display = 'none';
+      document.getElementById('ov-live-badge').style.display = 'none';
       showOvScreen('waiting');
     });
 
-    // Auto-watch room from URL
+    // Auto-watch
     const urlParams = new URLSearchParams(window.location.search);
     const roomCode = urlParams.get('room');
     if (roomCode) {
       socket.emit('watch-room', { roomCode });
     }
 
-    socket.on('watch-success', ({ state, players, currentRound }) => {
-      if (players) {
+    socket.on('watch-success', ({ state, players, currentRound, settings }) => {
+      if (players && players.length > 0) {
         updateSidebar(players.map(p => ({ name: p.name, score: p.score })));
         document.getElementById('ov-sidebar').style.display = '';
       }
       if (state === 'active' && currentRound) {
         document.getElementById('ov-round').textContent = currentRound.number;
-        document.getElementById('ov-total').textContent = currentRound.totalRounds;
+        document.getElementById('ov-total').textContent = currentRound.totalRounds || 10;
         document.getElementById('ov-product').textContent = currentRound.productName;
-        document.getElementById('ov-currency-active').textContent = currentRound.currency;
+        document.getElementById('ov-currency-label').textContent = currentRound.currency;
+        document.getElementById('ov-guess-count').textContent = currentRound.guessCount || 0;
+        document.getElementById('ov-guess-total').textContent = players ? players.length : 0;
         showOvScreen('active');
+        document.getElementById('ov-live-badge').style.display = 'flex';
       }
+    });
+
+    socket.on('host-disconnected', () => {
+      document.getElementById('ov-sidebar').style.display = 'none';
+      document.getElementById('ov-live-badge').style.display = 'none';
+      showOvScreen('waiting');
     });
   </script>
 </body>

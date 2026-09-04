@@ -5,19 +5,401 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>خمّن السعر - اللعب</title>
   <link rel="stylesheet" href="styles.css">
+  <style>
+    .player-body {
+      background: var(--bg-primary);
+      position: relative;
+    }
+
+    .player-card {
+      overflow: hidden;
+    }
+
+    /* Join screen */
+    .join-logo {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .join-logo-text {
+      font-size: 1.8rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light), var(--gold));
+      background-size: 200% 200%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: logo-shimmer 4s ease infinite;
+    }
+
+    .room-code-field input {
+      text-align: center !important;
+      font-size: 2rem !important;
+      font-weight: 900 !important;
+      letter-spacing: 10px !important;
+      direction: ltr !important;
+      padding: 16px !important;
+      background: var(--bg-card) !important;
+      border-color: var(--border-gold) !important;
+    }
+
+    .room-code-field input:focus {
+      box-shadow: 0 0 0 3px rgba(251,191,36,0.15), 0 0 24px rgba(251,191,36,0.1) !important;
+      border-color: var(--gold) !important;
+    }
+
+    .join-btn {
+      font-size: 1.15rem !important;
+      padding: 16px !important;
+      margin-top: 8px;
+      border-radius: var(--radius-md) !important;
+    }
+
+    .join-error {
+      color: var(--red);
+      text-align: center;
+      margin-top: 12px;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    /* Waiting */
+    .p-waiting {
+      text-align: center;
+      padding: 48px 16px;
+    }
+
+    .p-waiting-spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid var(--border);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 24px;
+    }
+
+    .p-waiting h2 {
+      color: var(--gold);
+      font-size: 1.4rem;
+      margin-bottom: 8px;
+    }
+
+    .p-waiting p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    /* Guess screen */
+    .p-guess-header {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .p-round-pill {
+      background: var(--bg-card);
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      border: 1px solid var(--border);
+    }
+
+    .p-timer-ring {
+      position: relative;
+      width: 64px;
+      height: 64px;
+    }
+
+    .p-timer-svg {
+      width: 64px;
+      height: 64px;
+      transform: rotate(-90deg);
+    }
+
+    .p-timer-bg {
+      fill: none;
+      stroke: rgba(255,255,255,0.06);
+      stroke-width: 4;
+    }
+
+    .p-timer-progress {
+      fill: none;
+      stroke: var(--gold);
+      stroke-width: 4;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 1s linear, stroke 0.3s;
+    }
+
+    .p-timer-num {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 1.6rem;
+      font-weight: 900;
+      transition: color 0.3s;
+    }
+
+    .p-timer-num.warning { color: var(--gold); }
+    .p-timer-num.danger {
+      color: var(--red);
+      animation: p-timer-pulse 0.5s infinite alternate;
+    }
+
+    @keyframes p-timer-pulse {
+      to { transform: translate(-50%, -50%) scale(1.15); }
+    }
+
+    .p-question-area {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .p-question-label {
+      color: var(--text-muted);
+      font-size: 0.88rem;
+      margin-bottom: 6px;
+    }
+
+    .p-question-product {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--gold);
+      margin-bottom: 4px;
+      text-shadow: 0 0 16px rgba(251,191,36,0.15);
+    }
+
+    .p-question-currency {
+      color: var(--gold-dark);
+      font-size: 0.88rem;
+      font-weight: 600;
+    }
+
+    .p-submit-btn {
+      font-size: 1.25rem !important;
+      padding: 16px !important;
+      border-radius: var(--radius-md) !important;
+      margin-top: 4px;
+    }
+
+    .p-hint {
+      text-align: center;
+      margin-top: 14px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .p-hint.warn {
+      color: var(--gold);
+      font-weight: 700;
+    }
+
+    /* Guessed confirmation */
+    .p-guessed {
+      text-align: center;
+      padding: 36px 16px;
+    }
+
+    .p-guessed-icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(52,211,153,0.15), rgba(52,211,153,0.05));
+      border: 2px solid rgba(52,211,153,0.3);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.2rem;
+      margin-bottom: 16px;
+      animation: check-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .p-guessed-label {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+    }
+
+    .p-guessed-value {
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: var(--gold);
+      text-shadow: 0 0 20px rgba(251,191,36,0.25);
+      margin-bottom: 24px;
+    }
+
+    .p-guessed-waiting {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .p-guessed-waiting .mini-spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--border);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    /* Result */
+    .p-result {
+      text-align: center;
+      padding: 24px 8px;
+    }
+
+    .p-result-medal {
+      font-size: 4rem;
+      margin-bottom: 8px;
+      animation: medal-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .p-result-title {
+      font-size: 1.3rem;
+      font-weight: 800;
+      margin-bottom: 16px;
+    }
+
+    .p-result-title.win { color: var(--green); }
+    .p-result-title.miss { color: var(--text-muted); }
+
+    .p-result-stats {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .p-result-stat {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+      min-width: 100px;
+    }
+
+    .p-result-stat-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+
+    .p-result-stat-value {
+      font-size: 1.2rem;
+      font-weight: 800;
+    }
+
+    .p-result-stat-value.under { color: var(--green); }
+    .p-result-stat-value.over { color: var(--red); }
+
+    .p-result-points {
+      font-size: 1.8rem;
+      font-weight: 900;
+      color: var(--gold);
+      margin-bottom: 8px;
+      animation: pts-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes pts-pop {
+      from { transform: scale(0.5); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .p-result-total {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      margin-bottom: 4px;
+    }
+
+    .p-result-total-score {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--gold);
+    }
+
+    .p-result-footer {
+      margin-top: 24px;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .p-result-footer .mini-spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--border);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    /* Game over */
+    .p-gameover {
+      text-align: center;
+      padding: 24px 8px;
+    }
+
+    .p-gameover-title {
+      font-size: 1.6rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 20px;
+    }
+
+    .p-gameover-medal {
+      font-size: 5rem;
+      margin-bottom: 12px;
+      animation: medal-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .p-gameover-rank {
+      font-size: 1.4rem;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .p-gameover-score {
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--gold);
+    }
+
+    .p-gameover-thanks {
+      margin-top: 20px;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+  </style>
 </head>
 <body class="player-body">
 
   <div class="player-card">
 
-    <!-- شاشة الانضمام -->
+    <!-- Join -->
     <div id="screen-join" class="screen active">
-      <h1 class="logo" style="font-size:1.6rem; margin-bottom:20px;">خمّن السعر 💰</h1>
+      <div class="join-logo">
+        <div class="join-logo-text">خمّن السعر</div>
+      </div>
 
-      <div class="input-group">
+      <div class="input-group room-code-field">
         <label>كود الغرفة</label>
-        <input type="text" id="room-code-input" maxlength="4" inputmode="numeric" pattern="[0-9]*"
-               placeholder="أدخل الكود" dir="ltr" style="text-align:center; font-size:1.8rem; font-weight:800; letter-spacing:8px;">
+        <input type="text" id="room-code-input" maxlength="4" inputmode="numeric" pattern="[0-9]*" placeholder="- - - -">
       </div>
 
       <div class="input-group">
@@ -25,78 +407,77 @@
         <input type="text" id="player-name-input" placeholder="أدخل اسمك" maxlength="20">
       </div>
 
-      <button class="btn btn-primary btn-full" id="btn-join" style="font-size:1.1rem; padding:14px;">
-        انضم
+      <button class="btn btn-primary btn-full join-btn" id="btn-join">
+        انضم للعبة
       </button>
 
-      <div id="join-error" style="color:var(--red); text-align:center; margin-top:12px; display:none;"></div>
+      <div class="join-error" id="join-error" style="display:none;"></div>
     </div>
 
-    <!-- شاشة الانتظار -->
+    <!-- Waiting -->
     <div id="screen-waiting" class="screen">
-      <div class="waiting">
-        <div class="spinner"></div>
-        <h2 style="margin-bottom:8px;">تم الانضمام!</h2>
-        <p style="color:var(--text-muted);">بانتظار بدء الجولة...</p>
+      <div class="p-waiting">
+        <div class="p-waiting-spinner"></div>
+        <h2>تم الانضمام!</h2>
+        <p>بانتظار بدء الجولة...</p>
       </div>
     </div>
 
-    <!-- شاشة التخمين -->
+    <!-- Guess -->
     <div id="screen-guess" class="screen">
-      <div class="round-header" style="justify-content:center; gap:16px;">
-        <span class="round-badge">الجولة <span id="p-round-num">1</span>/<span id="p-total-rounds">10</span></span>
-        <div class="timer-circle" id="p-timer-circle" style="width:60px; height:60px; font-size:1.5rem; border-width:4px;">
-          <span id="p-timer-value">20</span>
+      <div class="p-guess-header">
+        <span class="p-round-pill">الجولة <span id="p-round-num">1</span>/<span id="p-total-rounds">10</span></span>
+
+        <div class="p-timer-ring">
+          <svg class="p-timer-svg" viewBox="0 0 64 64">
+            <circle class="p-timer-bg" cx="32" cy="32" r="28" />
+            <circle class="p-timer-progress" id="p-timer-progress" cx="32" cy="32" r="28"
+              stroke-dasharray="175.93" stroke-dashoffset="0" />
+          </svg>
+          <div class="p-timer-num" id="p-timer-value">20</div>
         </div>
       </div>
 
-      <div style="text-align:center; margin:16px 0;">
-        <div style="color:var(--text-muted); font-size:0.9rem;">كم سعر</div>
-        <div class="product-name" id="p-product-name" style="font-size:1.4rem; margin:8px 0;"></div>
-        <div style="color:var(--gold); font-size:0.9rem;">(<span id="p-currency"></span>)</div>
+      <div class="p-question-area">
+        <div class="p-question-label">كم سعر</div>
+        <div class="p-question-product" id="p-product-name"></div>
+        <div class="p-question-currency">(<span id="p-currency"></span>)</div>
       </div>
 
       <div class="input-group">
-        <label>تخمينك</label>
         <input type="number" id="guess-input" class="player-guess-input"
                inputmode="decimal" placeholder="0" dir="ltr" min="1" step="any">
       </div>
 
-      <button class="btn btn-primary btn-full" id="btn-submit-guess" style="font-size:1.2rem; padding:14px;">
-        أرسل
+      <button class="btn btn-primary btn-full p-submit-btn" id="btn-submit-guess">
+        أرسل تخمينك
       </button>
 
-      <div class="player-hint warning">⚠️ أول تخمين فقط يُحتسب!</div>
-      <div class="player-hint">💡 الأقرب بدون تجاوز يفوز</div>
+      <div class="p-hint warn">أول تخمين فقط يُحتسب!</div>
+      <div class="p-hint">الأقرب بدون تجاوز يفوز</div>
     </div>
 
-    <!-- شاشة تم التخمين -->
+    <!-- Guessed -->
     <div id="screen-guessed" class="screen">
-      <div class="guess-confirmed">
-        <div class="checkmark">✅</div>
-        <div style="margin-bottom:8px;">تخمينك:</div>
-        <div class="value" id="guessed-value"></div>
-        <div style="color:var(--text-muted); margin-top:16px;">
-          <div class="spinner" style="width:32px; height:32px; border-width:3px;"></div>
+      <div class="p-guessed">
+        <div class="p-guessed-icon">✓</div>
+        <div class="p-guessed-label">تخمينك</div>
+        <div class="p-guessed-value" id="guessed-value"></div>
+        <div class="p-guessed-waiting">
+          <div class="mini-spinner"></div>
           بانتظار النتيجة...
         </div>
       </div>
     </div>
 
-    <!-- شاشة النتيجة -->
+    <!-- Result -->
     <div id="screen-player-result" class="screen">
-      <div class="player-result-card">
-        <div id="p-result-content"></div>
-        <div style="margin-top:16px; color:var(--text-muted);">بانتظار الجولة التالية...</div>
-      </div>
+      <div class="p-result" id="p-result-content"></div>
     </div>
 
-    <!-- شاشة النهاية -->
+    <!-- Game Over -->
     <div id="screen-player-gameover" class="screen">
-      <div style="text-align:center;">
-        <h2 class="logo" style="font-size:1.4rem;">انتهت اللعبة! 🏆</h2>
-        <div id="p-final-result"></div>
-      </div>
+      <div class="p-gameover" id="p-final-result"></div>
     </div>
 
   </div>

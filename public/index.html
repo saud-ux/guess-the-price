@@ -5,18 +5,77 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>خمّن السعر - الهوست</title>
   <link rel="stylesheet" href="styles.css">
+  <style>
+    .host-timer-container {
+      position: relative;
+      width: 110px;
+      height: 110px;
+    }
+
+    .host-timer-svg {
+      width: 110px;
+      height: 110px;
+      transform: rotate(-90deg);
+      filter: drop-shadow(0 0 6px rgba(251,191,36,0.2));
+    }
+
+    .host-timer-bg {
+      fill: none;
+      stroke: rgba(255,255,255,0.06);
+      stroke-width: 5;
+    }
+
+    .host-timer-progress {
+      fill: none;
+      stroke: var(--gold);
+      stroke-width: 5;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 1s linear, stroke 0.3s;
+    }
+
+    .host-timer-num {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 2.8rem;
+      font-weight: 900;
+      transition: color 0.3s;
+    }
+
+    .host-timer-num.warning { color: var(--gold); }
+    .host-timer-num.danger {
+      color: var(--red);
+      animation: timer-pulse 0.5s infinite alternate;
+    }
+
+    .overlay-link-section {
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    .overlay-link-hint {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+  </style>
 </head>
 <body>
   <div class="container">
 
-    <!-- شاشة اللوبي -->
+    <!-- Lobby -->
     <div id="screen-lobby" class="screen active">
-      <h1 class="logo">خمّن السعر 💰</h1>
+      <h1 class="logo">خمّن السعر</h1>
 
       <div id="room-info" class="room-code-display" style="display:none;">
         <div class="label">كود الغرفة</div>
         <div class="code" id="room-code"></div>
-        <button class="btn btn-secondary btn-small copy-btn" id="btn-copy-link">نسخ الرابط</button>
+        <button class="btn btn-secondary btn-small copy-btn" id="btn-copy-link">نسخ رابط اللاعبين</button>
+        <div class="overlay-link-section">
+          <div class="overlay-link-hint">رابط الأوفرلاي (OBS)</div>
+          <button class="btn btn-secondary btn-small" id="btn-copy-overlay" style="font-size:0.8rem; padding:6px 14px;">نسخ رابط الأوفرلاي</button>
+        </div>
       </div>
 
       <div id="pre-room" style="text-align:center; padding:40px 0;">
@@ -24,7 +83,7 @@
       </div>
 
       <div id="lobby-content" style="display:none;">
-        <!-- تويتش -->
+        <!-- Twitch -->
         <div class="section">
           <div class="section-title">تويتش (اختياري)</div>
           <div style="display:flex; gap:8px; align-items:flex-end;">
@@ -40,7 +99,7 @@
           </div>
         </div>
 
-        <!-- اللاعبين -->
+        <!-- Players -->
         <div class="section">
           <div class="section-title">اللاعبين (<span id="player-count">0</span>)</div>
           <div class="player-list" id="player-list"></div>
@@ -49,7 +108,7 @@
           </div>
         </div>
 
-        <!-- إعدادات -->
+        <!-- Settings -->
         <div class="section">
           <div class="section-title">إعدادات</div>
           <div class="settings-row">
@@ -99,7 +158,7 @@
       </div>
     </div>
 
-    <!-- شاشة إعداد الجولة -->
+    <!-- Setup Round -->
     <div id="screen-setup" class="screen">
       <div class="round-header">
         <span class="round-badge">الجولة <span id="setup-round-num">1</span>/<span id="setup-total-rounds">10</span></span>
@@ -124,12 +183,18 @@
       </button>
     </div>
 
-    <!-- شاشة أثناء الجولة -->
+    <!-- Active Round -->
     <div id="screen-active" class="screen">
       <div class="round-header">
         <span class="round-badge">الجولة <span id="active-round-num">1</span>/<span id="active-total-rounds">10</span></span>
-        <div class="timer-circle" id="timer-circle">
-          <span id="timer-value">20</span>
+
+        <div class="host-timer-container">
+          <svg class="host-timer-svg" viewBox="0 0 110 110">
+            <circle class="host-timer-bg" cx="55" cy="55" r="48" />
+            <circle class="host-timer-progress" id="host-timer-progress" cx="55" cy="55" r="48"
+              stroke-dasharray="301.59" stroke-dashoffset="0" />
+          </svg>
+          <div class="host-timer-num" id="timer-value">20</div>
         </div>
       </div>
 
@@ -144,7 +209,7 @@
         التخمينات المستلمة: <span id="guess-count">0</span>/<span id="guess-total">0</span>
       </div>
 
-      <div style="text-align:center; color:var(--text-muted); margin-top:8px;">
+      <div style="text-align:center; color:var(--text-muted); margin-top:8px; font-size:0.9rem;">
         التخمينات مخفية حتى انتهاء الوقت
       </div>
 
@@ -153,7 +218,7 @@
       </div>
     </div>
 
-    <!-- شاشة النتائج -->
+    <!-- Results -->
     <div id="screen-results" class="screen">
       <div class="round-header">
         <span class="round-badge">الجولة <span id="result-round-num">1</span>/<span id="result-total-rounds">10</span> — النتيجة</span>
@@ -182,9 +247,9 @@
       <button class="btn btn-primary btn-full" id="btn-next-round" style="font-size:1.2rem; padding:16px;"></button>
     </div>
 
-    <!-- شاشة النهاية -->
+    <!-- Game Over -->
     <div id="screen-gameover" class="screen">
-      <h1 class="logo">انتهت اللعبة! 🏆</h1>
+      <h1 class="logo">انتهت اللعبة!</h1>
 
       <div class="final-podium" id="final-podium"></div>
 
